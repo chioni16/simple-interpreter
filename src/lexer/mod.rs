@@ -1,5 +1,5 @@
 use crate::token::{ 
-    token_type::{TokenType, is_keyword, token_type_for_single_symbols, token_type_for_double_symbols}, 
+    token_type::{TokenType, tt_keywords, tt_single_operators, tt_double_operators, tt_delimiters}, 
     Token,
 };
 
@@ -93,8 +93,8 @@ impl Lexer {
             ('\x00', _) => self.create_token(TokenType::Eof),
             ('a'..='z' | 'A'..='Z', _) => {
                 let s = self.ident();
-                if let Some(kw) = is_keyword(s.as_str()) {
-                    self.create_token(kw.clone())
+                if let Some(kw) = tt_keywords(s.as_str()) {
+                    self.create_token(kw)
                 } else {
                     self.create_token(TokenType::Ident(s))
                 }
@@ -104,10 +104,10 @@ impl Lexer {
                 self.create_token(TokenType::Int(s))
             }
             (c0, c1) => {
-                if let Some(tt) = token_type_for_double_symbols(c0, c1) {
+                if let Some(tt) = tt_double_operators(c0, c1) {
                     self.end_pos += 2;
                     self.create_token(tt)
-                } else if let Some(tt) = token_type_for_single_symbols(c0) {
+                } else if let Some(tt) = tt_single_operators(c0).or_else(|| tt_delimiters(c0)) {
                     self.end_pos += 1;
                     self.create_token(tt)
                 } else {

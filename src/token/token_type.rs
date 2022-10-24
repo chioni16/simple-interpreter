@@ -2,9 +2,18 @@
 pub enum TokenType {
     Illegal,
     Eof,
-    // Identifiers + literals
+
     Ident(String), 
     Int(String), // remains a string as I don't want to "parse" the data till the parse step
+
+    SO(SingleOperator),
+    DO(DoubleOperator),
+    DL(Delimiter),
+    KW(Keyword),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum SingleOperator {
     // Operators
     Assign, 
     Plus,
@@ -14,16 +23,63 @@ pub enum TokenType {
     LT,
     GT,
     Bang,
+}
+
+pub(crate) fn tt_single_operators(c: char) -> Option<TokenType> {
+    let tt = match c {
+        '=' => SingleOperator::Assign,
+        '+' => SingleOperator::Plus,
+        '-' => SingleOperator::Minus,
+        '*' => SingleOperator::Asterisk,
+        '/' => SingleOperator::Slash,
+        '<' => SingleOperator::LT,
+        '>' => SingleOperator::GT,
+        '!' => SingleOperator::Bang,
+        _ => return None,
+    };
+    Some(TokenType::SO(tt))
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DoubleOperator {
     Eq,
     NotEq,
-    // Delimiters
+}
+
+pub(crate) fn tt_double_operators(c0: char, c1: char) -> Option<TokenType> {
+    let tt = match (c0, c1) {
+        ('=', '=') => DoubleOperator::Eq,
+        ('!', '=') => DoubleOperator::NotEq,
+        _ => return None
+    };
+    Some(TokenType::DO(tt))
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Delimiter {
     Comma, 
     Semicolon, 
     Lparen,
     Rparen,
     Lbrace,
     Rbrace,
-    // Keywords
+}
+
+pub(crate) fn tt_delimiters(c: char) -> Option<TokenType> {
+    let tt = match c {
+        ',' => Delimiter::Comma,
+        ';' => Delimiter::Semicolon,
+        '(' => Delimiter::Lparen,
+        ')' => Delimiter::Rparen,
+        '{' => Delimiter::Lbrace,
+        '}' => Delimiter::Rbrace,
+        _ => return None,
+    };
+    Some(TokenType::DL(tt))
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Keyword {
     Function, 
     Let, 
     True,
@@ -33,50 +89,16 @@ pub enum TokenType {
     Return,
 }
 
-pub(crate) fn token_type_for_double_symbols(c0: char, c1: char) -> Option<TokenType> {
-    let tt = match (c0, c1) {
-        ('=', '=') => TokenType::Eq,
-        ('!', '=') => TokenType::NotEq,
+pub(crate) fn tt_keywords<'a>(s: impl Into<&'a str>) -> Option<TokenType> {
+    let tt = match s.into() {
+        "fn" => Keyword::Function,
+        "let" => Keyword::Let,
+        "true" => Keyword::True, 
+        "false" => Keyword::False,
+        "if" => Keyword::If,
+        "else" => Keyword::Else,
+        "return" => Keyword::Return,
         _ => return None
     };
-    Some(tt)
-}
-
-pub(crate) fn token_type_for_single_symbols(c: char) -> Option<TokenType> {
-    let tt = match c {
-        '=' => TokenType::Assign,
-        '+' => TokenType::Plus,
-        '-' => TokenType::Minus,
-        '*' => TokenType::Asterisk,
-        '/' => TokenType::Slash,
-        '<' => TokenType::LT,
-        '>' => TokenType::GT,
-        '!' => TokenType::Bang,
-
-        ',' => TokenType::Comma,
-        ';' => TokenType::Semicolon,
-        '(' => TokenType::Lparen,
-        ')' => TokenType::Rparen,
-        '{' => TokenType::Lbrace,
-        '}' => TokenType::Rbrace,
-        _ => return None,
-    };
-    Some(tt)
-}
-
-const KEYWORDS: [(&'static str, TokenType); 7] = [
-    ("fn", TokenType::Function),
-    ("let", TokenType::Let),
-    ("true", TokenType::True), 
-    ("false", TokenType::False),
-    ("if", TokenType::If),
-    ("else", TokenType::Else),
-    ("return", TokenType::Return),
-];
-
-pub(crate) fn is_keyword<'a>(s: impl Into<&'a str>) -> Option<&'static TokenType> {
-    let s = s.into();
-    KEYWORDS.iter()
-        .find(|e| s.eq((**e).0))
-        .map(|(_, tt)| tt)
+    Some(TokenType::KW(tt))
 } 
