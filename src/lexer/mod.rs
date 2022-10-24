@@ -1,5 +1,5 @@
 use crate::token::{ 
-    token_type::{TokenType, is_keyword, token_type_for_special_symbols}, 
+    token_type::{TokenType, is_keyword, token_type_for_single_symbols, token_type_for_double_symbols}, 
     Token,
 };
 
@@ -87,12 +87,11 @@ impl Lexer {
         self.start_pos = self.end_pos;
         // invariance: start_pos is pointing to the beginning of a new lexeme
         // when we reach the match statement
-        let c = self.input[self.start_pos] as char;
-        match c {
-            '\x00' => {
-                self.create_token(TokenType::Eof)
-            }
-            'a'..='z' | 'A'..='Z' => {
+        let c0 = self.input[self.start_pos] as char;
+        let c1 = self.input[self.start_pos+1] as char;
+        match (c0, c1) {
+            ('\x00', _) => self.create_token(TokenType::Eof),
+            ('a'..='z' | 'A'..='Z', _) => {
                 let s = self.ident();
                 if let Some(kw) = is_keyword(s.as_str()) {
                     self.create_token(kw.clone())
@@ -100,12 +99,15 @@ impl Lexer {
                     self.create_token(TokenType::Ident(s))
                 }
             }
-            '0'..='9' => {
+            ('0'..='9', _) => {
                 let s = self.digits();
                 self.create_token(TokenType::Int(s))
             }
-            _ => {
-                if let Some(tt) = token_type_for_special_symbols(c) {
+            (c0, c1) => {
+                if let Some(tt) = token_type_for_double_symbols(c0, c1) {
+                    self.end_pos += 2;
+                    self.create_token(tt)
+                } else if let Some(tt) = token_type_for_single_symbols(c0) {
                     self.end_pos += 1;
                     self.create_token(tt)
                 } else {

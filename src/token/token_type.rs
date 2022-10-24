@@ -14,6 +14,8 @@ pub enum TokenType {
     LT,
     GT,
     Bang,
+    Eq,
+    NotEq,
     // Delimiters
     Comma, 
     Semicolon, 
@@ -31,7 +33,16 @@ pub enum TokenType {
     Return,
 }
 
-pub(crate) fn token_type_for_special_symbols(c: char) -> Option<TokenType> {
+pub(crate) fn token_type_for_double_symbols(c0: char, c1: char) -> Option<TokenType> {
+    let tt = match (c0, c1) {
+        ('=', '=') => TokenType::Eq,
+        ('!', '=') => TokenType::NotEq,
+        _ => return None
+    };
+    Some(tt)
+}
+
+pub(crate) fn token_type_for_single_symbols(c: char) -> Option<TokenType> {
     let tt = match c {
         '=' => TokenType::Assign,
         '+' => TokenType::Plus,
