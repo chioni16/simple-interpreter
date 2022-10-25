@@ -9,7 +9,7 @@ type Pos = usize;
 // position of first character of the token + that of the last one 
 type Span = (Pos, Pos);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub r#type: TokenType,
     pub span: Span, 

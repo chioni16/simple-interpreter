@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenType {
     Illegal,
     Eof,
@@ -12,7 +12,7 @@ pub enum TokenType {
     KW(Keyword),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SingleOperator {
     // Operators
     Assign, 
@@ -40,7 +40,7 @@ pub(crate) fn tt_single_operators(c: char) -> Option<TokenType> {
     Some(TokenType::SO(tt))
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DoubleOperator {
     Eq,
     NotEq,
@@ -55,7 +55,7 @@ pub(crate) fn tt_double_operators(c0: char, c1: char) -> Option<TokenType> {
     Some(TokenType::DO(tt))
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Delimiter {
     Comma, 
     Semicolon, 
@@ -78,7 +78,7 @@ pub(crate) fn tt_delimiters(c: char) -> Option<TokenType> {
     Some(TokenType::DL(tt))
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Keyword {
     Function, 
     Let, 
