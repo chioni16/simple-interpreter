@@ -6,80 +6,29 @@ pub enum TokenType {
     Ident(String), 
     Int(String), // remains a string as I don't want to "parse" the data till the parse step
 
-    SO(SingleOperator),
-    DO(DoubleOperator),
-    DL(Delimiter),
-    KW(Keyword),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SingleOperator {
-    // Operators
-    Assign, 
+    // SingleOperator
+    Assign,
     Plus,
-    Minus, 
-    Asterisk, 
-    Slash, 
+    Minus,
+    Asterisk,
+    Slash,
     LT,
     GT,
     Bang,
-}
 
-pub(crate) fn tt_single_operators(c: char) -> Option<TokenType> {
-    let tt = match c {
-        '=' => SingleOperator::Assign,
-        '+' => SingleOperator::Plus,
-        '-' => SingleOperator::Minus,
-        '*' => SingleOperator::Asterisk,
-        '/' => SingleOperator::Slash,
-        '<' => SingleOperator::LT,
-        '>' => SingleOperator::GT,
-        '!' => SingleOperator::Bang,
-        _ => return None,
-    };
-    Some(TokenType::SO(tt))
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DoubleOperator {
+    // DoubleOperator
     Eq,
     NotEq,
-}
 
-pub(crate) fn tt_double_operators(c0: char, c1: char) -> Option<TokenType> {
-    let tt = match (c0, c1) {
-        ('=', '=') => DoubleOperator::Eq,
-        ('!', '=') => DoubleOperator::NotEq,
-        _ => return None
-    };
-    Some(TokenType::DO(tt))
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Delimiter {
+    // Delimiter
     Comma, 
     Semicolon, 
     Lparen,
     Rparen,
     Lbrace,
     Rbrace,
-}
-
-pub(crate) fn tt_delimiters(c: char) -> Option<TokenType> {
-    let tt = match c {
-        ',' => Delimiter::Comma,
-        ';' => Delimiter::Semicolon,
-        '(' => Delimiter::Lparen,
-        ')' => Delimiter::Rparen,
-        '{' => Delimiter::Lbrace,
-        '}' => Delimiter::Rbrace,
-        _ => return None,
-    };
-    Some(TokenType::DL(tt))
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Keyword {
+    
+    // Keyword
     Function, 
     Let, 
     True,
@@ -89,16 +38,53 @@ pub enum Keyword {
     Return,
 }
 
-pub(crate) fn tt_keywords<'a>(s: impl Into<&'a str>) -> Option<TokenType> {
-    let tt = match s.into() {
-        "fn" => Keyword::Function,
-        "let" => Keyword::Let,
-        "true" => Keyword::True, 
-        "false" => Keyword::False,
-        "if" => Keyword::If,
-        "else" => Keyword::Else,
-        "return" => Keyword::Return,
+pub(crate) fn tt_single_operators(c: char) -> Option<TokenType> {
+    let tt = match c {
+        '=' => TokenType::Assign,
+        '+' => TokenType::Plus,
+        '-' => TokenType::Minus,
+        '*' => TokenType::Asterisk,
+        '/' => TokenType::Slash,
+        '<' => TokenType::LT,
+        '>' => TokenType::GT,
+        '!' => TokenType::Bang,
+        _ => return None,
+    };
+    Some(tt)
+}
+
+pub(crate) fn tt_double_operators(c0: char, c1: char) -> Option<TokenType> {
+    let tt = match (c0, c1) {
+        ('=', '=') => TokenType::Eq,
+        ('!', '=') => TokenType::NotEq,
         _ => return None
     };
-    Some(TokenType::KW(tt))
+    Some(tt)
+}
+
+pub(crate) fn tt_delimiters(c: char) -> Option<TokenType> {
+    let tt = match c {
+        ',' => TokenType::Comma,
+        ';' => TokenType::Semicolon,
+        '(' => TokenType::Lparen,
+        ')' => TokenType::Rparen,
+        '{' => TokenType::Lbrace,
+        '}' => TokenType::Rbrace,
+        _ => return None,
+    };
+    Some(tt)
+}
+
+pub(crate) fn tt_keywords<'a>(s: impl Into<&'a str>) -> Option<TokenType> {
+    let tt = match s.into() {
+        "fn"        => TokenType::Function,
+        "let"       => TokenType::Let,
+        "true"      => TokenType::True, 
+        "false"     => TokenType::False,
+        "if"        => TokenType::If,
+        "else"      => TokenType::Else,
+        "return"    => TokenType::Return,
+        _           => return None
+    };
+    Some(tt)
 } 

@@ -5,21 +5,14 @@ use crate::ast::expression::{Ident, Int, UnaryOperator, BinaryOperator, Bool, Bl
 use crate::token::Token;
 use crate::lexer::Lexer;
 use crate::ast::statement::{Program, LetStatement, ReturnStatement, ExpressionStatement};
-use crate::token::token_type::{ TokenType, Keyword, SingleOperator, Delimiter };
+use crate::token::token_type::TokenType;
 
 #[derive(Debug)]
 pub struct ParseError {
     expected: String, 
     found: Option<Token>, 
 }
-// impl ParseError {
-//     fn new(expected: Vec<TokenType>, found: Token) -> Self {
-//         Self {
-//             expected, 
-//             found,
-//         }
-//     }
-// }
+
 type ParseResult<T> = Result<T, ParseError>;
 
 pub struct Parser {
@@ -50,17 +43,13 @@ impl Parser {
     }
 
     fn check_token_type(&self, expected: TokenType) -> ParseResult<()> {
-        if let Some(t) = self.current.as_ref() {
-            let tt = &t.r#type;
-            match expected {
-                TokenType::Ident(_) | TokenType::Int(_) if discriminant(&expected) == discriminant(tt) => { return Ok(()) } 
-                _  => if t.r#type == expected { return Ok(()) },   
-            }
+        match self.current.as_ref() {
+            Some(Token {r#type: tt, ..}) if discriminant(&expected) == discriminant(tt) => Ok(()),
+            _ => Err(ParseError {
+                    expected: format!("{:?}", expected),
+                    found: self.current.clone(),
+                })
         }
-        Err(ParseError {
-            expected: format!("{:?}", expected),
-            found: self.current.clone(),
-        })
     }
 
     fn expect(&mut self, expected: TokenType) -> ParseResult<()> {
@@ -87,19 +76,19 @@ impl Parser {
     fn parse_statement(&mut self) -> ParseResult<StatementNode> {
         // safe to unwrap because of the check in parse_program function
         let stmt: StatementNode = match self.current.as_ref().unwrap().r#type {
-            TokenType::KW(Keyword::Let) => self.parse_let_statement()?.into(),
-            TokenType::KW(Keyword::Return) => self.parse_return_statement()?.into(),
+            TokenType::Let => self.parse_let_statement()?.into(),
+            TokenType::Return => self.parse_return_statement()?.into(),
             _ => self.parse_expression_statement()?.into(),
         };
         Ok(stmt)
     }
 
     fn parse_let_statement(&mut self) -> ParseResult<LetStatement> {
-        self.expect(TokenType::KW(Keyword::Let))?;
+        self.expect(TokenType::Let)?;
 
         let ident = self.parse_ident()?;
 
-        self.expect(TokenType::SO(SingleOperator::Assign))?;
+        self.expect(TokenType::Assign)?;
 
         let expr = self.parse_expression(0)?;
 
@@ -108,7 +97,7 @@ impl Parser {
     }
 
     fn parse_return_statement(&mut self) -> ParseResult<ReturnStatement> {
-        self.expect(TokenType::KW(Keyword::Return))?;
+        self.expect(TokenType::Return)?;
         
         let expr = self.parse_expression(0)?;
         
@@ -126,9 +115,6 @@ impl Parser {
 }
 impl Parser {
     fn parse_ident(&mut self) -> ParseResult<Ident> {
-        // if let Some(&Token{ r#type: TokenType::Ident(_), ..}) = self.current.as_ref() {
-
-        // }
         self.check_token_type(TokenType::Ident("".into()))?;
         let ident = Ident::new(self.current.take().unwrap());
         self.advance_tokens();
@@ -150,27 +136,27 @@ impl Parser {
     }
 
     fn parse_block(&mut self) -> ParseResult<Block> {
-        self.expect(TokenType::DL(Delimiter::Lbrace))?;
+        self.expect(TokenType::Lbrace)?;
 
         let mut stmts = vec![];
-        while self.check_token_type(TokenType::DL(Delimiter::Rbrace)).is_err() {
+        while self.check_token_type(TokenType::Rbrace).is_err() {
             stmts.push(self.parse_statement()?);
         }
         
-        self.expect(TokenType::DL(Delimiter::Rbrace))?;
+        self.expect(TokenType::Rbrace)?;
         
         Ok(Block::new(stmts))
     }
 
     fn parse_if_else(&mut self) -> ParseResult<If> {
-        self.expect(TokenType::KW(Keyword::If))?;
+        self.expect(TokenType::If)?;
 
         let condition = self.parse_expression(0)?;
         
         let action = self.parse_block()?;
         
         let mut alternate = None;
-        if self.expect(TokenType::KW(Keyword::Else)).is_ok() {
+        if self.expect(TokenType::Else).is_ok() {
             alternate = Some(self.parse_block()?);
         }
 
@@ -178,37 +164,37 @@ impl Parser {
     }
 
     fn parse_arg_list(&mut self) -> ParseResult<Vec<Ident>> {
-        self.expect(TokenType::DL(Delimiter::Lparen))?;
+        self.expect(TokenType::Lparen)?;
         let mut args = vec![];
         let mut tc = Ok(());
-        while self.check_token_type(TokenType::DL(Delimiter::Rparen)).is_err() {
+        while self.check_token_type(TokenType::Rparen).is_err() {
             tc?;
             args.push(self.parse_ident()?);
-            tc = self.expect(TokenType::DL(Delimiter::Comma));
+            tc = self.expect(TokenType::Comma);
 
         }
         tc.ok();
-        self.expect(TokenType::DL(Delimiter::Rparen))?;
+        self.expect(TokenType::Rparen)?;
         Ok(args)
     }
 
     fn parse_call_arg_list(&mut self) -> ParseResult<Vec<ExpressionNode>> {
-        self.expect(TokenType::DL(Delimiter::Lparen))?;
+        self.expect(TokenType::Lparen)?;
         let mut args = vec![];
         let mut tc = Ok(());
-        while self.check_token_type(TokenType::DL(Delimiter::Rparen)).is_err() {
+        while self.check_token_type(TokenType::Rparen).is_err() {
             tc?;
             args.push(self.parse_expression(0)?);
-            tc = self.expect(TokenType::DL(Delimiter::Comma));
+            tc = self.expect(TokenType::Comma);
 
         }
         tc.ok();
-        self.expect(TokenType::DL(Delimiter::Rparen))?;
+        self.expect(TokenType::Rparen)?;
         Ok(args)
     }
 
     fn parse_function(&mut self) -> ParseResult<Function> {
-        self.expect(TokenType::KW(Keyword::Function))?;
+        self.expect(TokenType::Function)?;
         
         let args = self.parse_arg_list()?;
 
@@ -224,27 +210,27 @@ impl Parser {
         let mut left:ExpressionNode = match self.current.as_ref().unwrap().r#type {
             TokenType::Ident(_) => self.parse_ident()?.into(),
             TokenType::Int(_) => self.parse_int()?.into(),
-            TokenType::KW(Keyword::True) | TokenType::KW(Keyword::False) => self.parse_bool()?.into(),
-            TokenType::DL(Delimiter::Lparen) => {
+            TokenType::True | TokenType::False => self.parse_bool()?.into(),
+            TokenType::Lparen => {
                 self.advance_tokens();
                 let expr = self.parse_expression(0)?;
-                self.expect(TokenType::DL(Delimiter::Rparen))?;
+                self.expect(TokenType::Rparen)?;
                 expr
             }
-            TokenType::SO(SingleOperator::Plus) | TokenType::SO(SingleOperator::Minus) | TokenType::SO(SingleOperator::Bang) => {
+            TokenType::Plus | TokenType::Minus | TokenType::Bang => {
                 let operator = self.current.take().unwrap();
                 self.advance_tokens();
                 let operand = self.parse_expression(100)?.into();
                 UnaryOperator::new(operator, operand).into()
             }
-            TokenType::DL(Delimiter::Lbrace) => self.parse_block()?.into(),
-            TokenType::KW(Keyword::If) => self.parse_if_else()?.into(),
-            TokenType::KW(Keyword::Function) => self.parse_function()?.into(),
+            TokenType::Lbrace => self.parse_block()?.into(),
+            TokenType::If => self.parse_if_else()?.into(),
+            TokenType::Function => self.parse_function()?.into(),
             _ => Err(ParseError{expected: "Ident|Int|UnaryOperator|(|{|if|fn".into(), found: self.current.take()})?
         };
         let mut nop = get_prec_assoc(self.current.as_ref());
         while prec <= nop{
-            if let Some(Token { r#type: TokenType::DL(Delimiter::Lparen), .. }) = self.current {
+            if let Some(Token { r#type: TokenType::Lparen, .. }) = self.current {
                 let args = self.parse_call_arg_list()?;
                 left = FunctionCall::new(left, args).into();
             } else {
@@ -256,7 +242,7 @@ impl Parser {
 
             nop = get_prec_assoc(self.current.as_ref());
         }
-        self.expect(TokenType::DL(Delimiter::Semicolon)).ok();
+        self.expect(TokenType::Semicolon).ok();
         Ok(left)
     }
 }
@@ -264,14 +250,14 @@ impl Parser {
 fn get_prec_assoc(op: Option<&Token>) -> i8 {
     // Precedence + Associativity (left=0;right=5)
     match op {
-        Some(Token { r#type: TokenType::SO(SingleOperator::Plus), .. }) => 10+0,
-        Some(Token { r#type: TokenType::SO(SingleOperator::Minus), .. }) => 10+0,
-        Some(Token { r#type: TokenType::SO(SingleOperator::Asterisk), .. }) => 20+0,
-        Some(Token { r#type: TokenType::SO(SingleOperator::Slash), .. }) => 20+0,
+        Some(Token { r#type: TokenType::Plus, .. }) => 10+0,
+        Some(Token { r#type: TokenType::Minus, .. }) => 10+0,
+        Some(Token { r#type: TokenType::Asterisk, .. }) => 20+0,
+        Some(Token { r#type: TokenType::Slash, .. }) => 20+0,
 
-        Some(Token { r#type: TokenType::DL(Delimiter::Lparen), .. }) => 110+0,
+        Some(Token { r#type: TokenType::Lparen, .. }) => 110+0,
 
-        Some(Token { r#type: TokenType::DL(Delimiter::Rparen), .. }) => -1+0,
+        Some(Token { r#type: TokenType::Rparen, .. }) => -1+0,
         _ => -100+0,
     }
 }
