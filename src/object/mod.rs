@@ -2,7 +2,7 @@ use std::ops::{Add, Sub, Mul, Div};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Object {
-    Err(String),
+    Error(String),
     Return(Box<Object>),
     Int(isize),
     Bool(bool),
@@ -10,41 +10,41 @@ pub enum Object {
 }
 
 impl Add for Object {
-    type Output = Object;
+    type Output = Result<Object, String>;
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Object::Int(lhs+rhs),
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs+rhs)),
             // (Object::Bool(lhs), Object::Bool(rhs)) => Object::Int(lhs as isize + rhs as isize),
-            _ => Object::Null,
+            _ => Err("Addition requires that both operands are integers".into()),
         } 
     }
 }
 impl Sub for Object {
-    type Output = Object;
+    type Output = Result<Object, String>;
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Object::Int(lhs-rhs),
-            _ => Object::Null,
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs-rhs)),
+            _ => Err("Subtraction requires that both operands are integers".into()),
         } 
     }
 }
 
 impl Mul for Object {
-    type Output = Object;
+    type Output = Result<Object, String>;
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Object::Int(lhs*rhs),
-            _ => Object::Null,
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs*rhs)),
+            _ => Err("Multiplication requires that both operands are integers".into()),
         } 
     }
 }
 
 impl Div for Object {
-    type Output = Object;
+    type Output = Result<Object, String>;
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Object::Int(lhs/rhs),
-            _ => Object::Null,
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs/rhs)),
+            _ => Err("Division requires that both operands are integers".into()),
         } 
     }
 }
