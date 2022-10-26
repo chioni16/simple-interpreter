@@ -28,3 +28,13 @@ impl Default for Token {
         Token { r#type: TokenType::Dummy, span: (0,0) }
     }
 }
+
+impl Token {
+    pub fn get_ident_name(self) -> Option<String> {
+        if let TokenType::Ident(ident) = self.r#type {
+            Some(ident)
+        } else {
+            None
+        }
+    } 
+}

@@ -1,5 +1,5 @@
 use super::statement::StatementNode;
-use crate::token::Token;
+use crate::token::{Token, token_type::TokenType};
 
 #[derive(Debug)]
 pub(crate) enum ExpressionNode {
@@ -66,6 +66,15 @@ pub(crate) struct Ident(Token);
 impl Ident {
     pub fn new(inner: Token) -> Self {
         Self(inner)
+    }
+}
+
+impl Into<String> for Ident {
+    fn into(self) -> String {
+        match self.0.r#type {
+            TokenType::Ident(ident) => ident,
+            _ => panic!("Ident(AST) doesn't contain Ident(token)")
+        }
     }
 }
 

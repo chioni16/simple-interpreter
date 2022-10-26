@@ -68,7 +68,7 @@ fn main() {
 
     // let l = Lexer::from_string(r#"return 72 * 43; -5478/7; "#.into());
     // let l = Lexer::from_string(r#"1 * 2; -4; "#.into());
-    let l = Lexer::from_string(r#"5; true;   43 -5478/7+true; 3 + 4 * 5 == 3 * 1 + 4 * 5 if 5 > 3 {89+41} else { 98 -87}"#.into());
+    // let l = Lexer::from_string(r#"5; true;   43 -5478/7+true; 3 + 4 * 5 == 3 * 1 + 4 * 5 if 5 > 3 {89+41} else { 98 -87}"#.into());
     // let l = Lexer::from_string(r#"
     //     if 6 > 3 {
     //         if 5> 3 {
@@ -80,15 +80,16 @@ fn main() {
     //         return 3
     //     }
     // "#.into());
-    // let l = Lexer::from_string(r#"
-    //     if (10 > 1) {
-    //         if (10 > 1) {
-    //             return 10;
-    //             45;
-    //         }
-    //         return 1;
-    //     }
-    // "#.into());
+    let l = Lexer::from_string(r#"
+        let x = 4;
+        if (x > 1) {
+            if (x > 3) {
+                return 10;
+                45;
+            }
+            return 1;
+        }
+    "#.into());
     let mut p = Parser::new(l);
     let ast = p.parse_program().unwrap();
     println!("{:?}", ast);
