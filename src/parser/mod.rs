@@ -17,7 +17,7 @@ pub struct ParseError {
     found: Option<Token>,
 }
 
-type ParseResult<T> = Result<T, ParseError>;
+pub(crate) type ParseResult<T> = Result<T, ParseError>;
 
 pub struct Parser {
     lexer: Lexer,
