@@ -1,7 +1,7 @@
 use std::mem::discriminant;
 
-use crate::ast::{StatementNode, ExpressionNode};
-use crate::ast::expression::{Ident, Int, UnaryOperator, BinaryOperator, Bool, Block, If, Function, ArgList, FunctionCall};
+use crate::ast::{statement::StatementNode, expression::ExpressionNode};
+use crate::ast::expression::{Ident, Int, UnaryOperator, BinaryOperator, Bool, Block, If, Function, FunctionCall};
 use crate::token::Token;
 use crate::lexer::Lexer;
 use crate::ast::statement::{Program, LetStatement, ReturnStatement, ExpressionStatement};
@@ -84,12 +84,12 @@ impl Parser {
         Ok(program)
     }
 
-    fn parse_statement(&mut self) -> ParseResult<Box<dyn StatementNode>> {
+    fn parse_statement(&mut self) -> ParseResult<StatementNode> {
         // safe to unwrap because of the check in parse_program function
-        let stmt: Box<dyn StatementNode> = match self.current.as_ref().unwrap().r#type {
-            TokenType::KW(Keyword::Let) => Box::from(self.parse_let_statement()?),
-            TokenType::KW(Keyword::Return) => Box::from(self.parse_return_statement()?),
-            _ => Box::from(self.parse_expression_statement()?),
+        let stmt: StatementNode = match self.current.as_ref().unwrap().r#type {
+            TokenType::KW(Keyword::Let) => self.parse_let_statement()?.into(),
+            TokenType::KW(Keyword::Return) => self.parse_return_statement()?.into(),
+            _ => self.parse_expression_statement()?.into(),
         };
         Ok(stmt)
     }
@@ -177,7 +177,7 @@ impl Parser {
         Ok(If::new(condition, action, alternate))
     }
 
-    fn parse_arg_list(&mut self) -> ParseResult<ArgList> {
+    fn parse_arg_list(&mut self) -> ParseResult<Vec<Ident>> {
         self.expect(TokenType::DL(Delimiter::Lparen))?;
         let mut args = vec![];
         let mut tc = Ok(());
@@ -192,7 +192,7 @@ impl Parser {
         Ok(args)
     }
 
-    fn parse_call_arg_list(&mut self) -> ParseResult<Vec<Box<dyn ExpressionNode>>> {
+    fn parse_call_arg_list(&mut self) -> ParseResult<Vec<ExpressionNode>> {
         self.expect(TokenType::DL(Delimiter::Lparen))?;
         let mut args = vec![];
         let mut tc = Ok(());
@@ -217,18 +217,14 @@ impl Parser {
         Ok(Function::new(args, body))
     }
 
-    fn parse_function_call(&mut self) -> ParseResult<FunctionCall> {
-        unimplemented!()
-    }
-
-    fn parse_expression(&mut self, prec: i8) -> ParseResult<Box<dyn ExpressionNode>> {
+    fn parse_expression(&mut self, prec: i8) -> ParseResult<ExpressionNode> {
         if self.current.is_none() {
             Err(ParseError{expected: "Any Expression".into(), found: self.current.take()})?;
         }
-        let mut left:Box<dyn ExpressionNode> = match self.current.as_ref().unwrap().r#type {
-            TokenType::Ident(_) => Box::from(self.parse_ident()?),
-            TokenType::Int(_) => Box::from(self.parse_int()?),
-            TokenType::KW(Keyword::True) | TokenType::KW(Keyword::False) => Box::from(self.parse_bool()?),
+        let mut left:ExpressionNode = match self.current.as_ref().unwrap().r#type {
+            TokenType::Ident(_) => self.parse_ident()?.into(),
+            TokenType::Int(_) => self.parse_int()?.into(),
+            TokenType::KW(Keyword::True) | TokenType::KW(Keyword::False) => self.parse_bool()?.into(),
             TokenType::DL(Delimiter::Lparen) => {
                 self.advance_tokens();
                 let expr = self.parse_expression(0)?;
@@ -238,24 +234,24 @@ impl Parser {
             TokenType::SO(SingleOperator::Plus) | TokenType::SO(SingleOperator::Minus) | TokenType::SO(SingleOperator::Bang) => {
                 let operator = self.current.take().unwrap();
                 self.advance_tokens();
-                let operand = Box::from(self.parse_expression(100)?);
-                Box::from(UnaryOperator::new(operator, operand))
+                let operand = self.parse_expression(100)?.into();
+                UnaryOperator::new(operator, operand).into()
             }
-            TokenType::DL(Delimiter::Lbrace) => Box::from(self.parse_block()?),
-            TokenType::KW(Keyword::If) => Box::from(self.parse_if_else()?),
-            TokenType::KW(Keyword::Function) => Box::from(self.parse_function()?),
+            TokenType::DL(Delimiter::Lbrace) => self.parse_block()?.into(),
+            TokenType::KW(Keyword::If) => self.parse_if_else()?.into(),
+            TokenType::KW(Keyword::Function) => self.parse_function()?.into(),
             _ => Err(ParseError{expected: "Ident|Int|UnaryOperator|(|{|if|fn".into(), found: self.current.take()})?
         };
         let mut nop = get_prec_assoc(self.current.as_ref());
         while prec <= nop{
             if let Some(Token { r#type: TokenType::DL(Delimiter::Lparen), .. }) = self.current {
                 let args = self.parse_call_arg_list()?;
-                left = Box::from(FunctionCall::new(left, args));
+                left = FunctionCall::new(left, args).into();
             } else {
                 let bop = self.current.take().unwrap();
                 self.advance_tokens();
                 let right = self.parse_expression(nop)?;
-                left = Box::from(BinaryOperator::new(bop, left, right));
+                left = BinaryOperator::new(bop, left, right).into();
             }
 
             nop = get_prec_assoc(self.current.as_ref());

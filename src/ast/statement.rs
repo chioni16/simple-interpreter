@@ -1,18 +1,40 @@
-use super::{ AstNode, StatementNode, ExpressionNode };
-use super::expression::Ident;
+use super::expression::{ ExpressionNode, Ident };
+
+#[derive(Debug)]
+pub(crate) enum StatementNode {
+    Let(Ident, ExpressionNode),
+    Return(ExpressionNode),
+    Expression(ExpressionNode),
+}
+
+impl From<LetStatement> for StatementNode {
+    fn from(value: LetStatement) -> Self {
+        Self::Let(value.ident, value.assign_val)
+    }
+}
+
+impl From<ReturnStatement> for StatementNode {
+    fn from(value: ReturnStatement) -> Self {
+        Self::Return(value.ret_val)
+    }
+}
+
+impl From<ExpressionStatement> for StatementNode {
+    fn from(value: ExpressionStatement) -> Self {
+        Self::Expression(value.0)
+    }
+}
 
 #[derive(Debug)]
 pub struct Program {
-    statements: Vec<Box<dyn StatementNode>>,    
+    statements: Vec<StatementNode>,    
 }
-
-impl AstNode for Program {}
 
 impl Program {
     pub(crate) fn new() -> Self {
         Self { statements: vec![] }
     }
-    pub(crate) fn add_statement(&mut self, stmt:Box<dyn StatementNode> ) {
+    pub(crate) fn add_statement(&mut self, stmt:StatementNode ) {
         self.statements.push(stmt);
     } 
 }
@@ -20,14 +42,12 @@ impl Program {
 #[derive(Debug)]
 pub(crate) struct LetStatement {
     ident: Ident,
-    assign_val: Box<dyn ExpressionNode>,
+    assign_val: ExpressionNode,
 }
 
-impl AstNode for LetStatement {}
-impl StatementNode for LetStatement {}
 
 impl LetStatement {
-    pub fn new(ident: Ident, assign_val: Box<dyn ExpressionNode>) -> Self {
+    pub fn new(ident: Ident, assign_val: ExpressionNode) -> Self {
         Self {
             ident,
             assign_val, 
@@ -37,28 +57,22 @@ impl LetStatement {
 
 #[derive(Debug)]
 pub(crate) struct ReturnStatement {
-    ret_val: Box<dyn ExpressionNode>,
+    ret_val: ExpressionNode,
 }
 
 impl ReturnStatement {
-    pub(crate) fn new(ret_val: Box<dyn ExpressionNode>) -> Self {
+    pub(crate) fn new(ret_val: ExpressionNode) -> Self {
         Self {
             ret_val, 
         }
     }
 }
 
-impl AstNode for ReturnStatement {}
-impl StatementNode for ReturnStatement {}
-
 #[derive(Debug)]
-pub(crate) struct ExpressionStatement(Box<dyn ExpressionNode>);
+pub(crate) struct ExpressionStatement(ExpressionNode);
 
 impl ExpressionStatement {
-    pub(crate) fn new(expr: Box<dyn ExpressionNode>) -> Self {
+    pub(crate) fn new(expr: ExpressionNode) -> Self {
         Self (expr)
     } 
 }
-
-impl AstNode for ExpressionStatement {}
-impl StatementNode for ExpressionStatement {}
