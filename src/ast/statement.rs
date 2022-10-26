@@ -26,20 +26,6 @@ impl From<ExpressionStatement> for StatementNode {
 }
 
 #[derive(Debug)]
-pub struct Program {
-    statements: Vec<StatementNode>,
-}
-
-impl Program {
-    pub(crate) fn new() -> Self {
-        Self { statements: vec![] }
-    }
-    pub(crate) fn add_statement(&mut self, stmt: StatementNode) {
-        self.statements.push(stmt);
-    }
-}
-
-#[derive(Debug)]
 pub(crate) struct LetStatement {
     ident: Ident,
     assign_val: ExpressionNode,

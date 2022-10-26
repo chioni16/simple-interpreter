@@ -1,11 +1,12 @@
 use std::mem::discriminant;
 
 use crate::ast::{
+    Program,
     expression::{
         BinaryOperator, Block, Bool, ExpressionNode, Function, FunctionCall, Ident, If, Int,
         UnaryOperator,
     },
-    statement::{ExpressionStatement, LetStatement, Program, ReturnStatement, StatementNode},
+    statement::{ExpressionStatement, LetStatement, ReturnStatement, StatementNode},
 };
 use crate::lexer::Lexer;
 use crate::token::{token_type::TokenType, Token};
@@ -83,6 +84,7 @@ impl Parser {
             TokenType::Return => self.parse_return_statement()?.into(),
             _ => self.parse_expression_statement()?.into(),
         };
+        self.expect(TokenType::Semicolon).ok();
         Ok(stmt)
     }
 
@@ -230,6 +232,7 @@ impl Parser {
             TokenType::Lbrace => self.parse_block()?.into(),
             TokenType::If => self.parse_if_else()?.into(),
             TokenType::Function => self.parse_function()?.into(),
+            // TokenType::Semicolon => return Ok(ExpressionNode::None),
             _ => Err(ParseError {
                 expected: "Ident|Int|UnaryOperator|(|{|if|fn".into(),
                 found: self.current.take(),
@@ -253,7 +256,7 @@ impl Parser {
 
             nop = get_prec_assoc(self.current.as_ref());
         }
-        self.expect(TokenType::Semicolon).ok();
+        // self.expect(TokenType::Semicolon).ok();
         Ok(left)
     }
 }
@@ -264,20 +267,36 @@ fn get_prec_assoc(op: Option<&Token>) -> i8 {
         Some(Token {
             r#type: TokenType::Plus,
             ..
-        }) => 10 + 0,
+        }) => 30 + 0,
         Some(Token {
             r#type: TokenType::Minus,
             ..
-        }) => 10 + 0,
+        }) => 30 + 0,
         Some(Token {
             r#type: TokenType::Asterisk,
             ..
-        }) => 20 + 0,
+        }) => 40 + 0,
         Some(Token {
             r#type: TokenType::Slash,
             ..
-        }) => 20 + 0,
+        }) => 40 + 0,
 
+        Some(Token {
+            r#type: TokenType::Eq,
+            ..
+        }) => 20 + 0,
+        Some(Token {
+            r#type: TokenType::NotEq,
+            ..
+        }) => 20 + 0,
+        Some(Token {
+            r#type: TokenType::GT,
+            ..
+        }) => 20 + 0,
+        Some(Token {
+            r#type: TokenType::LT,
+            ..
+        }) => 20 + 0,
         Some(Token {
             r#type: TokenType::Lparen,
             ..

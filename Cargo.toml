@@ -9,3 +9,6 @@ edition = "2021"
 
 [lib]
 name = "interpreter"
+
+[[bin]]
+name = "hello"

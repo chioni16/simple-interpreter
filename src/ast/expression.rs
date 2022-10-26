@@ -3,6 +3,7 @@ use crate::token::Token;
 
 #[derive(Debug)]
 pub(crate) enum ExpressionNode {
+    // None,
     Ident(Token),
     Int(Token),
     Bool(Token),
@@ -118,7 +119,7 @@ impl BinaryOperator {
 
 #[derive(Debug)]
 pub(crate) struct Block {
-    statements: Vec<StatementNode>,
+    pub statements: Vec<StatementNode>,
 }
 
 impl Block {
