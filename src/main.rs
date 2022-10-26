@@ -2,7 +2,8 @@ use interpreter::lexer::Lexer;
 use interpreter::parser::Parser;
 
 fn main() {
-    let l = Lexer::from_string("
+    let l = Lexer::from_string(
+        "
         let five = 5;
         let ten = 10;
         let add = fn(x, y) {
@@ -26,11 +27,14 @@ fn main() {
         let result = add(five, ten);
         !-/*5;
         5 < 10 > 5;
-    ".into());
+    "
+        .into(),
+    );
     for i in l {
         println!("{:?}", i);
     }
-    let l = Lexer::from_string("
+    let l = Lexer::from_string(
+        "
         let five = -5;
         let ten = +10;
         let fifteen = ten - minus;
@@ -51,7 +55,9 @@ fn main() {
         let h = fn(b, c) {
             b + c
         }(41, 98);
-    ".into());
+    "
+        .into(),
+    );
     let mut p = Parser::new(l);
     let ast = p.parse_program().unwrap();
     println!("{:?}", ast);

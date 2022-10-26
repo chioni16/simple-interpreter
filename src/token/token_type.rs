@@ -3,7 +3,7 @@ pub enum TokenType {
     Illegal,
     Eof,
 
-    Ident(String), 
+    Ident(String),
     Int(String), // remains a string as I don't want to "parse" the data till the parse step
 
     // SingleOperator
@@ -21,16 +21,16 @@ pub enum TokenType {
     NotEq,
 
     // Delimiter
-    Comma, 
-    Semicolon, 
+    Comma,
+    Semicolon,
     Lparen,
     Rparen,
     Lbrace,
     Rbrace,
-    
+
     // Keyword
-    Function, 
-    Let, 
+    Function,
+    Let,
     True,
     False,
     If,
@@ -57,7 +57,7 @@ pub(crate) fn tt_double_operators(c0: char, c1: char) -> Option<TokenType> {
     let tt = match (c0, c1) {
         ('=', '=') => TokenType::Eq,
         ('!', '=') => TokenType::NotEq,
-        _ => return None
+        _ => return None,
     };
     Some(tt)
 }
@@ -77,14 +77,14 @@ pub(crate) fn tt_delimiters(c: char) -> Option<TokenType> {
 
 pub(crate) fn tt_keywords<'a>(s: impl Into<&'a str>) -> Option<TokenType> {
     let tt = match s.into() {
-        "fn"        => TokenType::Function,
-        "let"       => TokenType::Let,
-        "true"      => TokenType::True, 
-        "false"     => TokenType::False,
-        "if"        => TokenType::If,
-        "else"      => TokenType::Else,
-        "return"    => TokenType::Return,
-        _           => return None
+        "fn" => TokenType::Function,
+        "let" => TokenType::Let,
+        "true" => TokenType::True,
+        "false" => TokenType::False,
+        "if" => TokenType::If,
+        "else" => TokenType::Else,
+        "return" => TokenType::Return,
+        _ => return None,
     };
     Some(tt)
-} 
+}

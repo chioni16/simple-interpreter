@@ -1,5 +1,5 @@
-use crate::token::{ 
-    token_type::{TokenType, tt_keywords, tt_single_operators, tt_double_operators, tt_delimiters}, 
+use crate::token::{
+    token_type::{tt_delimiters, tt_double_operators, tt_keywords, tt_single_operators, TokenType},
     Token,
 };
 
@@ -7,12 +7,12 @@ use crate::token::{
 pub struct Lexer {
     // input: BufReader<T>,
     // keeping it simple for now
-    // you can use BufReader with the unicode adapter that I have made 
+    // you can use BufReader with the unicode adapter that I have made
     // currently supports only pure ascii input
-    input: Vec<u8>, 
+    input: Vec<u8>,
 
-    // state 
-    // if you end up using bufreader, the state is managed by it? 
+    // state
+    // if you end up using bufreader, the state is managed by it?
     // not sure of the api that it exposes and the guarantees provided
 
     // indices into input
@@ -35,7 +35,7 @@ impl Lexer {
             end_pos: 0,
         }
     }
-    // maybe another fn from_file? 
+    // maybe another fn from_file?
 }
 
 // methods for managing state
@@ -88,7 +88,7 @@ impl Lexer {
         // invariance: start_pos is pointing to the beginning of a new lexeme
         // when we reach the match statement
         let c0 = self.input[self.start_pos] as char;
-        let c1 = self.input[self.start_pos+1] as char;
+        let c1 = self.input[self.start_pos + 1] as char;
         match (c0, c1) {
             ('\x00', _) => self.create_token(TokenType::Eof),
             ('a'..='z' | 'A'..='Z', _) => {
@@ -119,7 +119,7 @@ impl Lexer {
 }
 // Exposes the iterator interface
 // Some other options :
-//      do what rob pike did and use channels? 
+//      do what rob pike did and use channels?
 //      https://www.youtube.com/watch?v=HxaD_trXwRE
 impl Iterator for Lexer {
     type Item = Token;

@@ -1,16 +1,20 @@
 use std::mem::discriminant;
 
-use crate::ast::{statement::StatementNode, expression::ExpressionNode};
-use crate::ast::expression::{Ident, Int, UnaryOperator, BinaryOperator, Bool, Block, If, Function, FunctionCall};
-use crate::token::Token;
+use crate::ast::{
+    expression::{
+        BinaryOperator, Block, Bool, ExpressionNode, Function, FunctionCall, Ident, If, Int,
+        UnaryOperator,
+    },
+    statement::{ExpressionStatement, LetStatement, Program, ReturnStatement, StatementNode},
+};
 use crate::lexer::Lexer;
-use crate::ast::statement::{Program, LetStatement, ReturnStatement, ExpressionStatement};
-use crate::token::token_type::TokenType;
+use crate::token::{token_type::TokenType, Token};
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ParseError {
-    expected: String, 
-    found: Option<Token>, 
+    expected: String,
+    found: Option<Token>,
 }
 
 type ParseResult<T> = Result<T, ParseError>;
@@ -24,9 +28,9 @@ pub struct Parser {
 impl Parser {
     pub fn new(lexer: Lexer) -> Self {
         let mut p = Self {
-            lexer, 
-            current: None, 
-            peek: None, 
+            lexer,
+            current: None,
+            peek: None,
         };
         p.advance_tokens();
         p.advance_tokens();
@@ -35,8 +39,8 @@ impl Parser {
 
     fn advance_tokens(&mut self) {
         // self.current = self.peek.replace(self.lexer.next());
-        // TODO what happens if i keep calling next on lexer 
-        // even after it returned None? 
+        // TODO what happens if i keep calling next on lexer
+        // even after it returned None?
         let next = self.lexer.next();
         self.current = self.peek.take();
         self.peek = next;
@@ -44,11 +48,11 @@ impl Parser {
 
     fn check_token_type(&self, expected: TokenType) -> ParseResult<()> {
         match self.current.as_ref() {
-            Some(Token {r#type: tt, ..}) if discriminant(&expected) == discriminant(tt) => Ok(()),
+            Some(Token { r#type: tt, .. }) if discriminant(&expected) == discriminant(tt) => Ok(()),
             _ => Err(ParseError {
-                    expected: format!("{:?}", expected),
-                    found: self.current.clone(),
-                })
+                expected: format!("{:?}", expected),
+                found: self.current.clone(),
+            }),
         }
     }
 
@@ -57,10 +61,9 @@ impl Parser {
         self.advance_tokens();
         Ok(())
     }
-
 }
 
-// invariance: this is followed by all the parse functions(aka parselets) in this project 
+// invariance: this is followed by all the parse functions(aka parselets) in this project
 // a little bit like the target arch calling conventions
 // when a parselet is called, the `current` token points to the token that belongs to the AST node returned by the parselet
 impl Parser {
@@ -98,9 +101,9 @@ impl Parser {
 
     fn parse_return_statement(&mut self) -> ParseResult<ReturnStatement> {
         self.expect(TokenType::Return)?;
-        
+
         let expr = self.parse_expression(0)?;
-        
+
         let stmt = ReturnStatement::new(expr);
         Ok(stmt)
     }
@@ -120,7 +123,7 @@ impl Parser {
         self.advance_tokens();
         Ok(ident)
     }
-    
+
     fn parse_int(&mut self) -> ParseResult<Int> {
         self.check_token_type(TokenType::Int("".into()))?;
         let int = Int::new(self.current.take().unwrap());
@@ -142,9 +145,9 @@ impl Parser {
         while self.check_token_type(TokenType::Rbrace).is_err() {
             stmts.push(self.parse_statement()?);
         }
-        
+
         self.expect(TokenType::Rbrace)?;
-        
+
         Ok(Block::new(stmts))
     }
 
@@ -152,9 +155,9 @@ impl Parser {
         self.expect(TokenType::If)?;
 
         let condition = self.parse_expression(0)?;
-        
+
         let action = self.parse_block()?;
-        
+
         let mut alternate = None;
         if self.expect(TokenType::Else).is_ok() {
             alternate = Some(self.parse_block()?);
@@ -171,7 +174,6 @@ impl Parser {
             tc?;
             args.push(self.parse_ident()?);
             tc = self.expect(TokenType::Comma);
-
         }
         tc.ok();
         self.expect(TokenType::Rparen)?;
@@ -186,7 +188,6 @@ impl Parser {
             tc?;
             args.push(self.parse_expression(0)?);
             tc = self.expect(TokenType::Comma);
-
         }
         tc.ok();
         self.expect(TokenType::Rparen)?;
@@ -195,7 +196,7 @@ impl Parser {
 
     fn parse_function(&mut self) -> ParseResult<Function> {
         self.expect(TokenType::Function)?;
-        
+
         let args = self.parse_arg_list()?;
 
         let body = self.parse_block()?;
@@ -205,9 +206,12 @@ impl Parser {
 
     fn parse_expression(&mut self, prec: i8) -> ParseResult<ExpressionNode> {
         if self.current.is_none() {
-            Err(ParseError{expected: "Any Expression".into(), found: self.current.take()})?;
+            Err(ParseError {
+                expected: "Any Expression".into(),
+                found: self.current.take(),
+            })?;
         }
-        let mut left:ExpressionNode = match self.current.as_ref().unwrap().r#type {
+        let mut left: ExpressionNode = match self.current.as_ref().unwrap().r#type {
             TokenType::Ident(_) => self.parse_ident()?.into(),
             TokenType::Int(_) => self.parse_int()?.into(),
             TokenType::True | TokenType::False => self.parse_bool()?.into(),
@@ -226,11 +230,18 @@ impl Parser {
             TokenType::Lbrace => self.parse_block()?.into(),
             TokenType::If => self.parse_if_else()?.into(),
             TokenType::Function => self.parse_function()?.into(),
-            _ => Err(ParseError{expected: "Ident|Int|UnaryOperator|(|{|if|fn".into(), found: self.current.take()})?
+            _ => Err(ParseError {
+                expected: "Ident|Int|UnaryOperator|(|{|if|fn".into(),
+                found: self.current.take(),
+            })?,
         };
         let mut nop = get_prec_assoc(self.current.as_ref());
-        while prec <= nop{
-            if let Some(Token { r#type: TokenType::Lparen, .. }) = self.current {
+        while prec <= nop {
+            if let Some(Token {
+                r#type: TokenType::Lparen,
+                ..
+            }) = self.current
+            {
                 let args = self.parse_call_arg_list()?;
                 left = FunctionCall::new(left, args).into();
             } else {
@@ -250,14 +261,32 @@ impl Parser {
 fn get_prec_assoc(op: Option<&Token>) -> i8 {
     // Precedence + Associativity (left=0;right=5)
     match op {
-        Some(Token { r#type: TokenType::Plus, .. }) => 10+0,
-        Some(Token { r#type: TokenType::Minus, .. }) => 10+0,
-        Some(Token { r#type: TokenType::Asterisk, .. }) => 20+0,
-        Some(Token { r#type: TokenType::Slash, .. }) => 20+0,
+        Some(Token {
+            r#type: TokenType::Plus,
+            ..
+        }) => 10 + 0,
+        Some(Token {
+            r#type: TokenType::Minus,
+            ..
+        }) => 10 + 0,
+        Some(Token {
+            r#type: TokenType::Asterisk,
+            ..
+        }) => 20 + 0,
+        Some(Token {
+            r#type: TokenType::Slash,
+            ..
+        }) => 20 + 0,
 
-        Some(Token { r#type: TokenType::Lparen, .. }) => 110+0,
+        Some(Token {
+            r#type: TokenType::Lparen,
+            ..
+        }) => 110 + 0,
 
-        Some(Token { r#type: TokenType::Rparen, .. }) => -1+0,
-        _ => -100+0,
+        Some(Token {
+            r#type: TokenType::Rparen,
+            ..
+        }) => -1 + 0,
+        _ => -100 + 0,
     }
 }

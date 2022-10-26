@@ -1,4 +1,4 @@
-use super::expression::{ ExpressionNode, Ident };
+use super::expression::{ExpressionNode, Ident};
 
 #[derive(Debug)]
 pub(crate) enum StatementNode {
@@ -27,16 +27,16 @@ impl From<ExpressionStatement> for StatementNode {
 
 #[derive(Debug)]
 pub struct Program {
-    statements: Vec<StatementNode>,    
+    statements: Vec<StatementNode>,
 }
 
 impl Program {
     pub(crate) fn new() -> Self {
         Self { statements: vec![] }
     }
-    pub(crate) fn add_statement(&mut self, stmt:StatementNode ) {
+    pub(crate) fn add_statement(&mut self, stmt: StatementNode) {
         self.statements.push(stmt);
-    } 
+    }
 }
 
 #[derive(Debug)]
@@ -45,13 +45,9 @@ pub(crate) struct LetStatement {
     assign_val: ExpressionNode,
 }
 
-
 impl LetStatement {
     pub fn new(ident: Ident, assign_val: ExpressionNode) -> Self {
-        Self {
-            ident,
-            assign_val, 
-        }
+        Self { ident, assign_val }
     }
 }
 
@@ -62,9 +58,7 @@ pub(crate) struct ReturnStatement {
 
 impl ReturnStatement {
     pub(crate) fn new(ret_val: ExpressionNode) -> Self {
-        Self {
-            ret_val, 
-        }
+        Self { ret_val }
     }
 }
 
@@ -73,6 +67,6 @@ pub(crate) struct ExpressionStatement(ExpressionNode);
 
 impl ExpressionStatement {
     pub(crate) fn new(expr: ExpressionNode) -> Self {
-        Self (expr)
-    } 
+        Self(expr)
+    }
 }

@@ -1,5 +1,5 @@
-use crate::token::Token;
 use super::statement::StatementNode;
+use crate::token::Token;
 
 #[derive(Debug)]
 pub(crate) enum ExpressionNode {
@@ -62,7 +62,6 @@ impl From<FunctionCall> for ExpressionNode {
 #[derive(Debug)]
 pub(crate) struct Ident(Token);
 
-
 impl Ident {
     pub fn new(inner: Token) -> Self {
         Self(inner)
@@ -72,7 +71,6 @@ impl Ident {
 #[derive(Debug)]
 pub(crate) struct Int(Token);
 
-
 impl Int {
     pub fn new(inner: Token) -> Self {
         Self(inner)
@@ -80,7 +78,6 @@ impl Int {
 }
 #[derive(Debug)]
 pub(crate) struct Bool(Token);
-
 
 impl Bool {
     pub fn new(inner: Token) -> Self {
@@ -92,7 +89,6 @@ pub(crate) struct UnaryOperator {
     token: Token,
     operand: ExpressionNode,
 }
-
 
 impl UnaryOperator {
     pub fn new(operator: Token, operand: ExpressionNode) -> Self {
@@ -110,7 +106,6 @@ pub(crate) struct BinaryOperator {
     rhs: ExpressionNode,
 }
 
-
 impl BinaryOperator {
     pub fn new(bop: Token, lhs: ExpressionNode, rhs: ExpressionNode) -> Self {
         Self {
@@ -126,12 +121,9 @@ pub(crate) struct Block {
     statements: Vec<StatementNode>,
 }
 
-
 impl Block {
     pub fn new(statements: Vec<StatementNode>) -> Self {
-        Self {
-            statements,
-        }
+        Self { statements }
     }
 }
 
@@ -141,7 +133,6 @@ pub(crate) struct If {
     action: Block,
     alternate: Option<Block>,
 }
-
 
 impl If {
     pub fn new(condition: ExpressionNode, action: Block, alternate: Option<Block>) -> Self {
@@ -153,20 +144,15 @@ impl If {
     }
 }
 
-
 #[derive(Debug)]
 pub(crate) struct Function {
     args: Vec<Ident>,
     body: Block,
 }
 
-
 impl Function {
     pub fn new(args: Vec<Ident>, body: Block) -> Self {
-        Self {
-            args,
-            body,
-        }
+        Self { args, body }
     }
 }
 
@@ -178,9 +164,6 @@ pub(crate) struct FunctionCall {
 
 impl FunctionCall {
     pub fn new(name: ExpressionNode, args: Vec<ExpressionNode>) -> Self {
-        Self {
-            name,
-            args,
-        }
+        Self { name, args }
     }
 }
