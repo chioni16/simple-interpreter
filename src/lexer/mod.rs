@@ -107,11 +107,12 @@ impl Lexer {
                 if let Some(tt) = tt_double_operators(c0, c1) {
                     self.end_pos += 2;
                     self.create_token(tt)
-                } else if let Some(tt) = tt_single_operators(c0).or_else(|| tt_delimiters(c0)) {
+                } else if let Some(tt) = tt_single_operators(c0).or(tt_delimiters(c0)) {
                     self.end_pos += 1;
                     self.create_token(tt)
                 } else {
-                    self.create_token(TokenType::Illegal)
+                    self.end_pos += 1;
+                    self.create_token(TokenType::Illegal(c0))
                 }
             }
         }

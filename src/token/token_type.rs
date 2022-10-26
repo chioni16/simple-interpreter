@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenType {
-    Illegal,
+    Illegal(char),
     Eof,
 
     Ident(String),
