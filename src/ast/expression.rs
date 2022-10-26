@@ -10,8 +10,8 @@ pub(crate) enum ExpressionNode {
     UnaryOperator(Token, Box<ExpressionNode>),
     BinaryOperator(Token, Box<ExpressionNode>, Box<ExpressionNode>),
     Block(Vec<StatementNode>),
-    If(Box<ExpressionNode>, Block, Option<Block>),
-    Function(Vec<Ident>, Block),
+    If(Token, Box<ExpressionNode>, Block, Option<Block>),
+    Function(Token, Vec<Ident>, Block),
     FunctionCall(Box<ExpressionNode>, Vec<ExpressionNode>),
 }
 
@@ -47,12 +47,12 @@ impl From<Block> for ExpressionNode {
 }
 impl From<If> for ExpressionNode {
     fn from(value: If) -> Self {
-        Self::If(Box::from(value.condition), value.action, value.alternate)
+        Self::If(value.token, Box::from(value.condition), value.action, value.alternate)
     }
 }
 impl From<Function> for ExpressionNode {
     fn from(value: Function) -> Self {
-        Self::Function(value.args, value.body)
+        Self::Function(value.token, value.args, value.body)
     }
 }
 impl From<FunctionCall> for ExpressionNode {
@@ -130,14 +130,16 @@ impl Block {
 
 #[derive(Debug)]
 pub(crate) struct If {
+    token: Token,
     condition: ExpressionNode,
     action: Block,
     alternate: Option<Block>,
 }
 
 impl If {
-    pub fn new(condition: ExpressionNode, action: Block, alternate: Option<Block>) -> Self {
+    pub fn new(token: Token, condition: ExpressionNode, action: Block, alternate: Option<Block>) -> Self {
         Self {
+            token,
             condition,
             action,
             alternate,
@@ -147,13 +149,14 @@ impl If {
 
 #[derive(Debug)]
 pub(crate) struct Function {
+    token: Token,
     args: Vec<Ident>,
     body: Block,
 }
 
 impl Function {
-    pub fn new(args: Vec<Ident>, body: Block) -> Self {
-        Self { args, body }
+    pub fn new(token: Token, args: Vec<Ident>, body: Block) -> Self {
+        Self { token, args, body }
     }
 }
 

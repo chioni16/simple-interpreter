@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenType {
+    Dummy,
     Illegal(char),
     Eof,
 

@@ -57,10 +57,11 @@ impl Parser {
         }
     }
 
-    fn expect(&mut self, expected: TokenType) -> ParseResult<()> {
+    fn expect(&mut self, expected: TokenType) -> ParseResult<Token> {
         self.check_token_type(expected)?;
+        let token = self.current.take().unwrap();
         self.advance_tokens();
-        Ok(())
+        Ok(token)
     }
 }
 
@@ -89,7 +90,7 @@ impl Parser {
     }
 
     fn parse_let_statement(&mut self) -> ParseResult<LetStatement> {
-        self.expect(TokenType::Let)?;
+        let let_token = self.expect(TokenType::Let)?;
 
         let ident = self.parse_ident()?;
 
@@ -97,16 +98,16 @@ impl Parser {
 
         let expr = self.parse_expression(0)?;
 
-        let stmt = LetStatement::new(ident, expr);
+        let stmt = LetStatement::new(let_token, ident, expr);
         Ok(stmt)
     }
 
     fn parse_return_statement(&mut self) -> ParseResult<ReturnStatement> {
-        self.expect(TokenType::Return)?;
+        let ret_token = self.expect(TokenType::Return)?;
 
         let expr = self.parse_expression(0)?;
 
-        let stmt = ReturnStatement::new(expr);
+        let stmt = ReturnStatement::new(ret_token, expr);
         Ok(stmt)
     }
 
@@ -154,7 +155,7 @@ impl Parser {
     }
 
     fn parse_if_else(&mut self) -> ParseResult<If> {
-        self.expect(TokenType::If)?;
+        let if_token = self.expect(TokenType::If)?;
 
         let condition = self.parse_expression(0)?;
 
@@ -165,13 +166,13 @@ impl Parser {
             alternate = Some(self.parse_block()?);
         }
 
-        Ok(If::new(condition, action, alternate))
+        Ok(If::new(if_token, condition, action, alternate))
     }
 
     fn parse_arg_list(&mut self) -> ParseResult<Vec<Ident>> {
         self.expect(TokenType::Lparen)?;
         let mut args = vec![];
-        let mut tc = Ok(());
+        let mut tc = Ok(Token::default());
         while self.check_token_type(TokenType::Rparen).is_err() {
             tc?;
             args.push(self.parse_ident()?);
@@ -185,7 +186,7 @@ impl Parser {
     fn parse_call_arg_list(&mut self) -> ParseResult<Vec<ExpressionNode>> {
         self.expect(TokenType::Lparen)?;
         let mut args = vec![];
-        let mut tc = Ok(());
+        let mut tc = Ok(Token::default());
         while self.check_token_type(TokenType::Rparen).is_err() {
             tc?;
             args.push(self.parse_expression(0)?);
@@ -197,13 +198,13 @@ impl Parser {
     }
 
     fn parse_function(&mut self) -> ParseResult<Function> {
-        self.expect(TokenType::Function)?;
+        let fn_token = self.expect(TokenType::Function)?;
 
         let args = self.parse_arg_list()?;
 
         let body = self.parse_block()?;
 
-        Ok(Function::new(args, body))
+        Ok(Function::new(fn_token, args, body))
     }
 
     fn parse_expression(&mut self, prec: i8) -> ParseResult<ExpressionNode> {

@@ -16,7 +16,7 @@ fn eval(node: Node) -> Object {
         }
         Node::Statement(stmt) => match stmt {
             StatementNode::Expression(expr) => eval(Node::Expression(expr)),
-            StatementNode::Return(expr) => {
+            StatementNode::Return(_, expr) => {
                 let ret_val = eval(Node::Expression(expr));
                 Object::Return(Box::from(ret_val))
             }
@@ -34,7 +34,7 @@ fn eval(node: Node) -> Object {
                 let rhs = eval(Node::Expression(*rhs));
                 eval_binary(operator.r#type, lhs, rhs)
             }
-            ExpressionNode::If(condition, action, alternate) => {
+            ExpressionNode::If(_, condition, action, alternate) => {
                 let condition: bool = eval(Node::Expression(*condition)).into();
                 if condition {
                     eval_block(action.statements)

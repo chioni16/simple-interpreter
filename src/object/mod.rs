@@ -2,6 +2,7 @@ use std::ops::{Add, Sub, Mul, Div};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Object {
+    Err(String),
     Return(Box<Object>),
     Int(isize),
     Bool(bool),

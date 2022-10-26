@@ -22,3 +22,9 @@ impl Token {
         Self { r#type, span }
     }
 }
+
+impl Default for Token {
+    fn default() -> Self {
+        Token { r#type: TokenType::Dummy, span: (0,0) }
+    }
+}
