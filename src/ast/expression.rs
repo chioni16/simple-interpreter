@@ -1,8 +1,8 @@
 use super::statement::StatementNode;
 use crate::token::{Token, token_type::TokenType};
 
-#[derive(Debug)]
-pub(crate) enum ExpressionNode {
+#[derive(Debug, Clone)]
+pub enum ExpressionNode {
     // None,
     Ident(Token),
     Int(Token),
@@ -12,7 +12,7 @@ pub(crate) enum ExpressionNode {
     Block(Vec<StatementNode>),
     If(Token, Box<ExpressionNode>, Block, Option<Block>),
     Function(Token, Vec<Ident>, Block),
-    FunctionCall(Box<ExpressionNode>, Vec<ExpressionNode>),
+    FunctionCall(Token, Box<ExpressionNode>, Vec<ExpressionNode>),
 }
 
 impl From<Ident> for ExpressionNode {
@@ -57,11 +57,11 @@ impl From<Function> for ExpressionNode {
 }
 impl From<FunctionCall> for ExpressionNode {
     fn from(value: FunctionCall) -> Self {
-        Self::FunctionCall(Box::from(value.name), value.args)
+        Self::FunctionCall(value.token, Box::from(value.function), value.args)
     }
 }
-#[derive(Debug)]
-pub(crate) struct Ident(Token);
+#[derive(Debug, Clone)]
+pub struct Ident(Token);
 
 impl Ident {
     pub fn new(inner: Token) -> Self {
@@ -126,8 +126,8 @@ impl BinaryOperator {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct Block {
+#[derive(Debug, Clone)]
+pub struct Block {
     pub statements: Vec<StatementNode>,
 }
 
@@ -171,12 +171,13 @@ impl Function {
 
 #[derive(Debug)]
 pub(crate) struct FunctionCall {
-    name: ExpressionNode,
+    token: Token,
+    function: ExpressionNode,
     args: Vec<ExpressionNode>,
 }
 
 impl FunctionCall {
-    pub fn new(name: ExpressionNode, args: Vec<ExpressionNode>) -> Self {
-        Self { name, args }
+    pub fn new(token: Token, function: ExpressionNode, args: Vec<ExpressionNode>) -> Self {
+        Self { token, function, args }
     }
 }

@@ -83,12 +83,25 @@ fn main() {
     let l = Lexer::from_string(r#"
         let x = 4;
         if (x > 1) {
-            if (x > 20) {
-                return 10;
+            if (x > 5) {
                 45;
             }
-            return 1;
-        }
+        } 
+        let d = {
+             let e = 42;
+             e + 32
+         };{
+            5 + 20
+         }
+         let f = fn(a, b, c) {
+             let d = a+b-c;
+             d * 2
+         };
+         fn(a, b, c) {
+             let d = a+b-c;
+             d * 2
+         }
+         
     "#.into());
     let mut p = Parser::new(l);
     let ast = p.parse_program().unwrap();

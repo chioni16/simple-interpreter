@@ -247,7 +247,7 @@ impl Parser {
             }) = self.current
             {
                 let args = self.parse_call_arg_list()?;
-                left = FunctionCall::new(left, args).into();
+                left = FunctionCall::new(self.current.clone().unwrap(), left, args).into();
             } else {
                 let bop = self.current.take().unwrap();
                 self.advance_tokens();

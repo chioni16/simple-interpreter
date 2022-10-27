@@ -1,8 +1,8 @@
 use super::expression::{ExpressionNode, Ident};
 use crate::token::Token;
 
-#[derive(Debug)]
-pub(crate) enum StatementNode {
+#[derive(Debug, Clone)]
+pub enum StatementNode {
     Let(Token, Ident, ExpressionNode),
     Return(Token, ExpressionNode),
     Expression(ExpressionNode),

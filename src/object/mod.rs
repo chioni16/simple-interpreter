@@ -1,11 +1,14 @@
 use std::ops::{Add, Sub, Mul, Div};
+use crate::ast;
+use crate::token::Token;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone)]
 pub enum Object {
     Error(String),
     Return(Box<Object>),
     Int(isize),
     Bool(bool),
+    Function(Token, Vec<ast::expression::Ident>, ast::expression::Block),
     Null,
 }
 
@@ -46,6 +49,40 @@ impl Div for Object {
             (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs/rhs)),
             _ => Err("Division requires that both operands are integers".into()),
         } 
+    }
+}
+
+impl Object {
+    pub(crate) fn eq(self, rhs: Self) -> Result<Object, String> {
+        match (&self, &rhs) {
+            (Object::Null, Object::Null) => Ok(Object::Bool(true)),
+            (Object::Int(one), Object::Int(two)) => Ok(Object::Bool(one == two)),
+            (Object::Bool(one), Object::Bool(two)) => Ok(Object::Bool(one == two)),
+            _ => Err(format!("==/!= operator is not valid for types: {:?}, {:?}", self, rhs))
+        }
+    }
+
+    pub(crate) fn not_eq(self, rhs: Self) -> Result<Object, String> {
+        let eq = self.eq(rhs)?;
+        match eq {
+            Object::Bool(false) => Ok(Object::Bool(true)),
+            Object::Bool(true) => Ok(Object::Bool(false)),
+            _ => unreachable!()
+        }
+    }
+    
+    pub(crate) fn gt(self, rhs: Self) -> Result<Object, String> {
+        match (&self, &rhs) {
+            (Object::Int(one), Object::Int(two)) => Ok(Object::Bool(one > two)),
+            _ => Err(format!(">/< operator is not valid for types: {:?}, {:?}", self, rhs))
+        }
+    }
+
+    pub(crate) fn lt(self, rhs: Self) -> Result<Object, String> {
+        match (&self, &rhs) {
+            (Object::Int(one), Object::Int(two)) => Ok(Object::Bool(one < two)),
+            _ => Err(format!(">/< operator is not valid for types: {:?}, {:?}", self, rhs))
+        }
     }
 }
 

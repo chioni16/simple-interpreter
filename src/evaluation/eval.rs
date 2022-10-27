@@ -57,6 +57,7 @@ impl Evaluator {
                     let rhs = self.eval(Node::Expression(*rhs))?;
                     self.eval_binary(operator, lhs, rhs)
                 }
+                ExpressionNode::Block(block) => self.eval_block(block),
                 ExpressionNode::If(_, condition, action, alternate) => {
                     let condition: bool = self.eval(Node::Expression(*condition))?.into();
                     if condition {
@@ -65,6 +66,20 @@ impl Evaluator {
                         alternate.map_or(Ok(Object::Null), |alternate| {
                             self.eval_block(alternate.statements)
                         })
+                    }
+                }
+                ExpressionNode::Function(token, args, block) => Ok(Object::Function(token, args, block)),
+                ExpressionNode::FunctionCall(token, function, args) => {
+                    let function = self.eval(Node::Expression(*function))?;
+                    let args = args.into_iter().map(|arg| self.eval(Node::Expression(arg))).collect::<Result<Vec<Object>, EvalError>>()?;
+                    if let Object::Function(token, params, block) = function {
+                        if args.len() != params.len() {
+                            return Err(eval_err(format!("Incorrect number of arguments passed, Got: {}, Expected: {}", args.len(), params.len()), token));
+                        }
+
+                        unimplemented!()
+                    } else {
+                        Err(eval_err("Can't call a non function".into(), token))
                     }
                 }
                 _ => unimplemented!(),
@@ -128,14 +143,14 @@ impl Evaluator {
 
     fn eval_binary(&self, operator: Token, lhs: Object, rhs: Object) -> EvalResult {
         let o = match operator.r#type {
-            TokenType::Plus => (lhs + rhs).map_err(|err| eval_err(err, operator))?,
-            TokenType::Minus => (lhs - rhs).map_err(|err| eval_err(err, operator))?,
+            TokenType::Plus     => (lhs + rhs).map_err(|err| eval_err(err, operator))?,
+            TokenType::Minus    => (lhs - rhs).map_err(|err| eval_err(err, operator))?,
             TokenType::Asterisk => (lhs * rhs).map_err(|err| eval_err(err, operator))?,
-            TokenType::Slash => (lhs / rhs).map_err(|err| eval_err(err, operator))?,
-            TokenType::Eq => (lhs == rhs).into(),
-            TokenType::NotEq => (lhs != rhs).into(),
-            TokenType::GT => (lhs > rhs).into(),
-            TokenType::LT => (lhs < rhs).into(),
+            TokenType::Slash    => (lhs / rhs).map_err(|err| eval_err(err, operator))?,
+            TokenType::Eq       => (lhs.eq(rhs)).map_err(|err| eval_err(err, operator))?,
+            TokenType::NotEq    => (lhs.not_eq(rhs)).map_err(|err| eval_err(err, operator))?,
+            TokenType::GT       => (lhs.gt(rhs)).map_err(|err| eval_err(err, operator))?,
+            TokenType::LT       => (lhs.lt(rhs)).map_err(|err| eval_err(err, operator))?,
             _ => return Err(eval_err("Invalid binary operator".into(), operator)),
         };
         Ok(o)
