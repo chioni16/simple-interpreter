@@ -40,7 +40,7 @@ impl Evaluator {
                 }
                 StatementNode::Let(_, ident, val) => {
                     let val = self.eval(Node::Expression(val))?;
-                    self.env.set(ident.into(), &val); // irrecoverable error: problem with implementation
+                    self.env.set(ident.into(), val); // irrecoverable error: problem with implementation
                     Ok(Object::Null)
                 }
             },
@@ -76,13 +76,24 @@ impl Evaluator {
                         if args.len() != params.len() {
                             return Err(eval_err(format!("Incorrect number of arguments passed, Got: {}, Expected: {}", args.len(), params.len()), token));
                         }
+                        // let new_env = Env::new();
+                        // let old_env = std::mem::replace(&mut self.env, new_env);
+                        // self.env.update_outer(old_env);
+                        self.env.add_new_context();
 
-                        unimplemented!()
+                        for (p, a) in params.into_iter().map(|p| p.into()).zip(args.into_iter()) {
+                            self.env.set(p, a);
+                        }
+
+                        let return_val = self.eval_block(block.statements)?;
+                        
+                        self.env.get_prev_context();
+                        
+                        Ok(return_val)
                     } else {
                         Err(eval_err("Can't call a non function".into(), token))
                     }
                 }
-                _ => unimplemented!(),
             },
         }
     }
