@@ -4,11 +4,10 @@ use crate::object::Object;
 mod eval;
 mod env;
 
-use eval::eval;
-use env::Env;
+use eval::Evaluator;
 
 pub fn eval_program(program: Program) -> Object {
-    let mut env = Env::new();
-    eval(Node::Program(program), &mut env)
+    let mut evaluator = Evaluator::new();
+    evaluator.eval(Node::Program(program))
         .unwrap_or_else(|err| Object::Error(format!("{} @ {:?}", err.issue, err.token.span)))
 }

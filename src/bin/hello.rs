@@ -83,7 +83,7 @@ fn main() {
     let l = Lexer::from_string(r#"
         let x = 4;
         if (x > 1) {
-            if (x > 3) {
+            if (x > 20) {
                 return 10;
                 45;
             }
