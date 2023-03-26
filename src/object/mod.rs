@@ -1,6 +1,9 @@
+use std::cell::RefCell;
 use std::ops::{Add, Sub, Mul, Div};
+use std::rc::Rc;
 use crate::ast;
 use crate::token::Token;
+use crate::evaluation::Env;
 
 #[derive(Debug, Clone)]
 pub enum Object {
@@ -8,7 +11,7 @@ pub enum Object {
     Return(Box<Object>),
     Int(isize),
     Bool(bool),
-    Function(Token, Vec<ast::expression::Ident>, ast::expression::Block),
+    Function(Token, Vec<ast::expression::Ident>, ast::expression::Block, Rc<RefCell<Env>>),
     Null,
 }
 

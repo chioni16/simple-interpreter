@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use super::env::Env;
 use crate::ast::{expression::ExpressionNode, statement::StatementNode, Node};
 use crate::object::Object;
@@ -16,180 +19,166 @@ fn eval_err(issue: String, token: Token) -> EvalError {
 
 type EvalResult = Result<Object, EvalError>;
 
-pub(super) struct Evaluator {
-    env: Env,
+pub(super) fn eval(node: Node, env: Rc<RefCell<Env>>) -> EvalResult {
+    match node {
+        Node::Program(program) => {
+            let o = eval_block(program.statements, env.clone())?;
+            let o = if let Object::Return(o) = o { *o } else { o };
+            Ok(o)
+        }
+        Node::Statement(stmt) => match stmt {
+            StatementNode::Expression(expr) => eval(Node::Expression(expr), env.clone()),
+            StatementNode::Return(_, expr) => {
+                let ret_val = eval(Node::Expression(expr), env.clone())?;
+                Ok(Object::Return(Box::from(ret_val)))
+            }
+            StatementNode::Let(_, ident, val) => {
+                let val = eval(Node::Expression(val), env.clone())?;
+                env.borrow_mut().set(ident.into(), val); // irrecoverable error: problem with implementation
+                Ok(Object::Null)
+            }
+        },
+        Node::Expression(expr) => match expr {
+            ExpressionNode::Ident(token) => eval_ident(token, env.clone()),
+            ExpressionNode::Int(token) => eval_int(token),
+            ExpressionNode::Bool(token) => eval_bool(token),
+            ExpressionNode::UnaryOperator(operator, operand) => {
+                let operand = eval(Node::Expression(*operand), env.clone())?;
+                eval_unary(operator, operand)
+            }
+            ExpressionNode::BinaryOperator(operator, lhs, rhs) => {
+                let lhs = eval(Node::Expression(*lhs), env.clone())?;
+                let rhs = eval(Node::Expression(*rhs), env.clone())?;
+                eval_binary(operator, lhs, rhs)
+            }
+            ExpressionNode::Block(block) => eval_block(block, env.clone()),
+            ExpressionNode::If(_, condition, action, alternate) => {
+                let condition: bool = eval(Node::Expression(*condition), env.clone())?.into();
+                if condition {
+                    eval_block(action.statements, env.clone())
+                } else {
+                    alternate.map_or(Ok(Object::Null), |alternate| {
+                        eval_block(alternate.statements, env.clone())
+                    })
+                }
+            }
+            ExpressionNode::Function(token, args, block) => Ok(Object::Function(token, args, block, env.clone())),
+            ExpressionNode::FunctionCall(token, function, args) => {
+                let function = eval(Node::Expression(*function), env.clone())?;
+                let args = args.into_iter().map(|arg| eval(Node::Expression(arg), env.clone())).collect::<Result<Vec<Object>, EvalError>>()?;
+                if let Object::Function(token, params, block, env) = function {
+                    if args.len() != params.len() {
+                        return Err(eval_err(format!("Incorrect number of arguments passed, Got: {}, Expected: {}", args.len(), params.len()), token));
+                    }
+
+                    let new_env = Env::extend(env.clone());
+
+                    for (p, a) in params.into_iter().map(|p| p.into()).zip(args.into_iter()) {
+                        new_env.borrow_mut().set(p, a);
+                    }
+
+                    let ret_val =  eval_block(block.statements, new_env)?;
+                    let ret_val = if let Object::Return(ret_val) = ret_val { *ret_val } else { ret_val };
+                    Ok(ret_val)
+                } else {
+                    Err(eval_err("Can't call a non function".into(), token))
+                }
+            }
+        },
+    }
 }
-impl Evaluator {
-    pub fn new() -> Self {
-        Self {
-            env: Env::new(),
-        }
+
+fn eval_ident(token: Token, env: Rc<RefCell<Env>>) -> Result<Object, EvalError> {
+    let key = token.clone().get_ident_name().unwrap(); // Ident(AST) contains Ident(Token)
+    env.borrow().get(&key)
+        .ok_or(eval_err("Failed to fetch the identifier".into(), token))
+}
+
+fn eval_int(token: Token) -> EvalResult {
+    if let TokenType::Int(ref int) = token.r#type {
+        let int = int
+            .parse::<isize>()
+            .map_err(|err| eval_err(err.to_string(), token))?;
+        Ok(Object::Int(int))
+    } else {
+        Err(eval_err("Expected Integer".into(), token))
     }
-    pub fn eval(&mut self, node: Node) -> EvalResult {
-        match node {
-            Node::Program(program) => {
-                let o = self.eval_block(program.statements)?;
-                let o = if let Object::Return(o) = o { *o } else { o };
-                Ok(o)
+}
+
+fn eval_bool(token: Token) -> EvalResult {
+    let o = match token.r#type {
+        TokenType::True => Object::Bool(true),
+        TokenType::False => Object::Bool(false),
+        _ => return Err(eval_err("Expected boolean".into(), token)),
+    };
+    Ok(o)
+}
+
+fn eval_unary(operator: Token, operand: Object) -> EvalResult {
+    let o = match operator.r#type {
+        TokenType::Bang => (!<Object as Into<bool>>::into(operand)).into(),
+        TokenType::Plus => {
+            if let Object::Int(int) = operand {
+                Object::Int(int)
+            } else {
+                return Err(eval_err(
+                    "Operand for the Unary Operator + should be an integer".into(),
+                    operator,
+                ));
             }
-            Node::Statement(stmt) => match stmt {
-                StatementNode::Expression(expr) => self.eval(Node::Expression(expr)),
-                StatementNode::Return(_, expr) => {
-                    let ret_val = self.eval(Node::Expression(expr))?;
-                    Ok(Object::Return(Box::from(ret_val)))
-                }
-                StatementNode::Let(_, ident, val) => {
-                    let val = self.eval(Node::Expression(val))?;
-                    self.env.set(ident.into(), val); // irrecoverable error: problem with implementation
-                    Ok(Object::Null)
-                }
-            },
-            Node::Expression(expr) => match expr {
-                ExpressionNode::Ident(token) => self.eval_ident(token),
-                ExpressionNode::Int(token) => self.eval_int(token),
-                ExpressionNode::Bool(token) => self.eval_bool(token),
-                ExpressionNode::UnaryOperator(operator, operand) => {
-                    let operand = self.eval(Node::Expression(*operand))?;
-                    self.eval_unary(operator, operand)
-                }
-                ExpressionNode::BinaryOperator(operator, lhs, rhs) => {
-                    let lhs = self.eval(Node::Expression(*lhs))?;
-                    let rhs = self.eval(Node::Expression(*rhs))?;
-                    self.eval_binary(operator, lhs, rhs)
-                }
-                ExpressionNode::Block(block) => self.eval_block(block),
-                ExpressionNode::If(_, condition, action, alternate) => {
-                    let condition: bool = self.eval(Node::Expression(*condition))?.into();
-                    if condition {
-                        self.eval_block(action.statements)
-                    } else {
-                        alternate.map_or(Ok(Object::Null), |alternate| {
-                            self.eval_block(alternate.statements)
-                        })
-                    }
-                }
-                ExpressionNode::Function(token, args, block) => Ok(Object::Function(token, args, block)),
-                ExpressionNode::FunctionCall(token, function, args) => {
-                    let function = self.eval(Node::Expression(*function))?;
-                    let args = args.into_iter().map(|arg| self.eval(Node::Expression(arg))).collect::<Result<Vec<Object>, EvalError>>()?;
-                    if let Object::Function(token, params, block) = function {
-                        if args.len() != params.len() {
-                            return Err(eval_err(format!("Incorrect number of arguments passed, Got: {}, Expected: {}", args.len(), params.len()), token));
-                        }
-                        // let new_env = Env::new();
-                        // let old_env = std::mem::replace(&mut self.env, new_env);
-                        // self.env.update_outer(old_env);
-                        self.env.add_new_context();
-
-                        for (p, a) in params.into_iter().map(|p| p.into()).zip(args.into_iter()) {
-                            self.env.set(p, a);
-                        }
-
-                        let return_val = self.eval_block(block.statements)?;
-                        
-                        self.env.get_prev_context();
-                        
-                        Ok(return_val)
-                    } else {
-                        Err(eval_err("Can't call a non function".into(), token))
-                    }
-                }
-            },
         }
-    }
-
-    fn eval_ident(&self, token: Token) -> Result<Object, EvalError> {
-        let key = token.clone().get_ident_name().unwrap(); // Ident(AST) contains Ident(Token)
-        self.env.get(&key)
-            .ok_or(eval_err("Failed to fetch the identifier".into(), token))
-    }
-
-    fn eval_int(&self, token: Token) -> EvalResult {
-        if let TokenType::Int(ref int) = token.r#type {
-            let int = int
-                .parse::<isize>()
-                .map_err(|err| eval_err(err.to_string(), token))?;
-            Ok(Object::Int(int))
-        } else {
-            Err(eval_err("Expected Integer".into(), token))
+        TokenType::Minus => {
+            if let Object::Int(int) = operand {
+                Object::Int(-1 * int)
+            } else {
+                return Err(eval_err(
+                    "Operand for the Unary Operator - should be an integer".into(),
+                    operator,
+                ));
+            }
         }
-    }
+        _ => return Err(eval_err("Invalid unary operator".into(), operator)),
+    };
+    Ok(o)
+}
 
-    fn eval_bool(&self, token: Token) -> EvalResult {
-        let o = match token.r#type {
-            TokenType::True => Object::Bool(true),
-            TokenType::False => Object::Bool(false),
-            _ => return Err(eval_err("Expected boolean".into(), token)),
-        };
-        Ok(o)
-    }
+fn eval_binary(operator: Token, lhs: Object, rhs: Object) -> EvalResult {
+    let o = match operator.r#type {
+        TokenType::Plus     => (lhs + rhs).map_err(|err| eval_err(err, operator))?,
+        TokenType::Minus    => (lhs - rhs).map_err(|err| eval_err(err, operator))?,
+        TokenType::Asterisk => (lhs * rhs).map_err(|err| eval_err(err, operator))?,
+        TokenType::Slash    => (lhs / rhs).map_err(|err| eval_err(err, operator))?,
+        TokenType::Eq       => (lhs.eq(rhs)).map_err(|err| eval_err(err, operator))?,
+        TokenType::NotEq    => (lhs.not_eq(rhs)).map_err(|err| eval_err(err, operator))?,
+        TokenType::GT       => (lhs.gt(rhs)).map_err(|err| eval_err(err, operator))?,
+        TokenType::LT       => (lhs.lt(rhs)).map_err(|err| eval_err(err, operator))?,
+        _ => return Err(eval_err("Invalid binary operator".into(), operator)),
+    };
+    Ok(o)
+}
 
-    fn eval_unary(&self, operator: Token, operand: Object) -> EvalResult {
-        let o = match operator.r#type {
-            TokenType::Bang => (!<Object as Into<bool>>::into(operand)).into(),
-            TokenType::Plus => {
-                if let Object::Int(int) = operand {
-                    Object::Int(int)
-                } else {
-                    return Err(eval_err(
-                        "Operand for the Unary Operator + should be an integer".into(),
-                        operator,
-                    ));
-                }
-            }
-            TokenType::Minus => {
-                if let Object::Int(int) = operand {
-                    Object::Int(-1 * int)
-                } else {
-                    return Err(eval_err(
-                        "Operand for the Unary Operator - should be an integer".into(),
-                        operator,
-                    ));
-                }
-            }
-            _ => return Err(eval_err("Invalid unary operator".into(), operator)),
-        };
-        Ok(o)
-    }
+// fn eval_program_inner(block: Vec<StatementNode>) -> Object {
+// block
+//     .into_iter()
+//     .map(|stmt| eval(Node::Statement(stmt)))
+//     .last()
+//     .unwrap_or(Object::Null)
 
-    fn eval_binary(&self, operator: Token, lhs: Object, rhs: Object) -> EvalResult {
-        let o = match operator.r#type {
-            TokenType::Plus     => (lhs + rhs).map_err(|err| eval_err(err, operator))?,
-            TokenType::Minus    => (lhs - rhs).map_err(|err| eval_err(err, operator))?,
-            TokenType::Asterisk => (lhs * rhs).map_err(|err| eval_err(err, operator))?,
-            TokenType::Slash    => (lhs / rhs).map_err(|err| eval_err(err, operator))?,
-            TokenType::Eq       => (lhs.eq(rhs)).map_err(|err| eval_err(err, operator))?,
-            TokenType::NotEq    => (lhs.not_eq(rhs)).map_err(|err| eval_err(err, operator))?,
-            TokenType::GT       => (lhs.gt(rhs)).map_err(|err| eval_err(err, operator))?,
-            TokenType::LT       => (lhs.lt(rhs)).map_err(|err| eval_err(err, operator))?,
-            _ => return Err(eval_err("Invalid binary operator".into(), operator)),
-        };
-        Ok(o)
-    }
+// reduce / fold?
+// early breaking is not possible
+// plus as executing statements is not pure / without side effects, i can't pull any tricks
+// like return || any = left
+// any || any = right
+// }
 
-    // fn eval_program_inner(block: Vec<StatementNode>) -> Object {
-    // block
-    //     .into_iter()
-    //     .map(|stmt| eval(Node::Statement(stmt)))
-    //     .last()
-    //     .unwrap_or(Object::Null)
-
-    // reduce / fold?
-    // early breaking is not possible
-    // plus as executing statements is not pure / without side effects, i can't pull any tricks
-    // like return || any = left
-    // any || any = right
-    // }
-
-    fn eval_block(&mut self, block: Vec<StatementNode>) -> EvalResult {
-        let mut result = None;
-        for stmt in block {
-            let r = self.eval(Node::Statement(stmt))?;
-            if let Object::Return(_) = r {
-                return Ok(r);
-            }
-            result = Some(r);
+fn eval_block(block: Vec<StatementNode>, env: Rc<RefCell<Env>>) -> EvalResult {
+    let mut result = Object::Null;
+    for stmt in block {
+        let r = eval(Node::Statement(stmt), env.clone())?;
+        if matches!(r, Object::Return(_)) {
+            return Ok(r);
         }
-        Ok(result.unwrap_or(Object::Null))
+        result = r;
     }
+    Ok(result)
 }

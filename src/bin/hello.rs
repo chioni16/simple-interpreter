@@ -100,14 +100,35 @@ fn main() {
     //     f(4,5,2)
          
     // "#.into());
+
+    // let l = Lexer::from_string(r#"
+    //      let a = 20;
+    //      if 5 > 6 {
+    //         let f = fn(a, b, c) {
+    //             let d = a+b-c;
+    //             d * 2
+    //         };
+    //      }
+    //     f(4,5,2);
+    //     a
+    // "#.into());
+
+    // let l = Lexer::from_string(r#"
+    //     if (10 < 1) {
+    //         if (10 < 1) {
+    //             return 10;
+    //         }
+    //         return 1;
+    //     }
+    //     return 4;
+    // "#.into());
+
     let l = Lexer::from_string(r#"
-         let a = 20;
-         let f = fn(a, b, c) {
-             let d = a+b-c;
-             d * 2
-         };
-        f(4,5,2);
-        a
+        let newAdder = fn(x) { fn(y) { x + y } };
+        let addTwo = newAdder(2);
+        addTwo(3);
+        let addThree = newAdder(3);
+        addThree(10);
     "#.into());
     let mut p = Parser::new(l);
     let ast = p.parse_program().unwrap();
