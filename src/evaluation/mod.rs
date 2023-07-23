@@ -1,11 +1,11 @@
 use crate::ast::{Node, Program};
+use crate::env::Env;
 use crate::object::Object;
 
 mod eval;
-mod env;
 
 use eval::eval;
-pub(crate) use env::Env; 
+// pub(crate) use env::Env;
 
 pub fn eval_program(program: Program) -> Object {
     let env = Env::new();

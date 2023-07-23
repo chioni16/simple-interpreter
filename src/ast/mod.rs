@@ -1,4 +1,4 @@
-use self::{statement::StatementNode, expression::ExpressionNode};
+use self::{expression::ExpressionNode, statement::StatementNode};
 
 pub(crate) mod expression;
 pub(crate) mod statement;

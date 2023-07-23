@@ -1,12 +1,12 @@
 use std::mem::discriminant;
 
 use crate::ast::{
-    Program,
     expression::{
         BinaryOperator, Block, Bool, ExpressionNode, Function, FunctionCall, Ident, If, Int,
         UnaryOperator,
     },
     statement::{ExpressionStatement, LetStatement, ReturnStatement, StatementNode},
+    Program,
 };
 use crate::lexer::Lexer;
 use crate::token::{token_type::TokenType, Token};
@@ -227,7 +227,7 @@ impl Parser {
             TokenType::Plus | TokenType::Minus | TokenType::Bang => {
                 let operator = self.current.take().unwrap();
                 self.advance_tokens();
-                let operand = self.parse_expression(100)?.into();
+                let operand = self.parse_expression(100)?;
                 UnaryOperator::new(operator, operand).into()
             }
             TokenType::Lbrace => self.parse_block()?.into(),

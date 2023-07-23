@@ -35,7 +35,11 @@ pub(crate) struct LetStatement {
 
 impl LetStatement {
     pub fn new(token: Token, ident: Ident, assign_val: ExpressionNode) -> Self {
-        Self { token, ident, assign_val }
+        Self {
+            token,
+            ident,
+            assign_val,
+        }
     }
 }
 

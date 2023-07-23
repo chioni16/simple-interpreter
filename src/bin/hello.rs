@@ -1,6 +1,8 @@
+use interpreter::emitter::Emitter;
+use interpreter::evaluation::eval_program;
 use interpreter::lexer::Lexer;
 use interpreter::parser::Parser;
-use interpreter::evaluation::eval_program;
+
 fn main() {
     // let l = Lexer::from_string(
     //     "
@@ -34,8 +36,6 @@ fn main() {
     //     println!("{:?}", i);
     // }
 
-
-
     // let l = Lexer::from_string(
     //     "
     //     let five = -5;
@@ -65,7 +65,6 @@ fn main() {
     // let ast = p.parse_program().unwrap();
     // println!("{:?}", ast);
 
-
     // let l = Lexer::from_string(r#"return 72 * 43; -5478/7; "#.into());
     // let l = Lexer::from_string(r#"1 * 2; -4; "#.into());
     // let l = Lexer::from_string(r#"5; true;   43 -5478/7+true; 3 + 4 * 5 == 3 * 1 + 4 * 5 if 5 > 3 {89+41} else { 98 -87}"#.into());
@@ -86,7 +85,7 @@ fn main() {
     //         if (x > 5) {
     //             45;
     //         }
-    //     } 
+    //     }
     //     let d = {
     //          let e = 42;
     //          e + 32
@@ -98,7 +97,7 @@ fn main() {
     //          d * 2
     //      };
     //     f(4,5,2)
-         
+
     // "#.into());
 
     // let l = Lexer::from_string(r#"
@@ -123,16 +122,34 @@ fn main() {
     //     return 4;
     // "#.into());
 
-    let l = Lexer::from_string(r#"
-        let newAdder = fn(x) { fn(y) { x + y } };
-        let addTwo = newAdder(2);
-        addTwo(3);
-        let addThree = newAdder(3);
-        addThree(10);
-    "#.into());
+    // let l = Lexer::from_string(
+    //     r#"
+    //     let newAdder = fn(x) { fn(y) { x + y } };
+    //     let addTwo = newAdder(2);
+    //     addTwo(3);
+    //     let addThree = newAdder(3);
+    //     addThree(10);
+    // "#
+    //     .into(),
+    // );
+    let l = Lexer::from_string(
+        r#"
+        let x = true;
+        if x {
+            2;
+        } else {
+            4;
+        }
+        "#
+        .into(),
+    );
     let mut p = Parser::new(l);
     let ast = p.parse_program().unwrap();
-    println!("{:?}", ast);
-    let object = eval_program(ast);
-    println!("{:?}", object);
+    println!("{:#?}", ast);
+    // let object = eval_program(ast);
+    // println!("{:#?}", object);
+    let mut e = Emitter::default();
+    e.compile_program(ast);
+    let b = e.emit();
+    println!("{:#?}", b);
 }

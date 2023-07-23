@@ -1,5 +1,5 @@
 use super::statement::StatementNode;
-use crate::token::{Token, token_type::TokenType};
+use crate::token::{token_type::TokenType, Token};
 
 #[derive(Debug, Clone)]
 pub enum ExpressionNode {
@@ -47,7 +47,12 @@ impl From<Block> for ExpressionNode {
 }
 impl From<If> for ExpressionNode {
     fn from(value: If) -> Self {
-        Self::If(value.token, Box::from(value.condition), value.action, value.alternate)
+        Self::If(
+            value.token,
+            Box::from(value.condition),
+            value.action,
+            value.alternate,
+        )
     }
 }
 impl From<Function> for ExpressionNode {
@@ -67,14 +72,18 @@ impl Ident {
     pub fn new(inner: Token) -> Self {
         Self(inner)
     }
+
+    pub fn get_string(&self) -> String {
+        match &self.0.r#type {
+            TokenType::Ident(ident) => ident.clone(),
+            _ => panic!("Ident(AST) doesn't contain Ident(token)"),
+        }
+    }
 }
 
-impl Into<String> for Ident {
-    fn into(self) -> String {
-        match self.0.r#type {
-            TokenType::Ident(ident) => ident,
-            _ => panic!("Ident(AST) doesn't contain Ident(token)")
-        }
+impl From<Ident> for String {
+    fn from(value: Ident) -> Self {
+        value.get_string()
     }
 }
 
@@ -146,7 +155,12 @@ pub(crate) struct If {
 }
 
 impl If {
-    pub fn new(token: Token, condition: ExpressionNode, action: Block, alternate: Option<Block>) -> Self {
+    pub fn new(
+        token: Token,
+        condition: ExpressionNode,
+        action: Block,
+        alternate: Option<Block>,
+    ) -> Self {
         Self {
             token,
             condition,
@@ -178,6 +192,10 @@ pub(crate) struct FunctionCall {
 
 impl FunctionCall {
     pub fn new(token: Token, function: ExpressionNode, args: Vec<ExpressionNode>) -> Self {
-        Self { token, function, args }
+        Self {
+            token,
+            function,
+            args,
+        }
     }
 }

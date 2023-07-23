@@ -25,7 +25,10 @@ impl Token {
 
 impl Default for Token {
     fn default() -> Self {
-        Token { r#type: TokenType::Dummy, span: (0,0) }
+        Token {
+            r#type: TokenType::Dummy,
+            span: (0, 0),
+        }
     }
 }
 
@@ -36,5 +39,5 @@ impl Token {
         } else {
             None
         }
-    } 
+    }
 }

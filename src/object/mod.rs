@@ -1,9 +1,9 @@
-use std::cell::RefCell;
-use std::ops::{Add, Sub, Mul, Div};
-use std::rc::Rc;
 use crate::ast;
+use crate::env::Env;
 use crate::token::Token;
-use crate::evaluation::Env;
+use std::cell::RefCell;
+use std::ops::{Add, Div, Mul, Sub};
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum Object {
@@ -11,7 +11,12 @@ pub enum Object {
     Return(Box<Object>),
     Int(isize),
     Bool(bool),
-    Function(Token, Vec<ast::expression::Ident>, ast::expression::Block, Rc<RefCell<Env>>),
+    Function(
+        Token,
+        Vec<ast::expression::Ident>,
+        ast::expression::Block,
+        Rc<RefCell<Env<Object>>>,
+    ),
     Null,
 }
 
@@ -19,19 +24,19 @@ impl Add for Object {
     type Output = Result<Object, String>;
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs+rhs)),
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs + rhs)),
             // (Object::Bool(lhs), Object::Bool(rhs)) => Object::Int(lhs as isize + rhs as isize),
             _ => Err("Addition requires that both operands are integers".into()),
-        } 
+        }
     }
 }
 impl Sub for Object {
     type Output = Result<Object, String>;
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs-rhs)),
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs - rhs)),
             _ => Err("Subtraction requires that both operands are integers".into()),
-        } 
+        }
     }
 }
 
@@ -39,9 +44,9 @@ impl Mul for Object {
     type Output = Result<Object, String>;
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs*rhs)),
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs * rhs)),
             _ => Err("Multiplication requires that both operands are integers".into()),
-        } 
+        }
     }
 }
 
@@ -49,9 +54,9 @@ impl Div for Object {
     type Output = Result<Object, String>;
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs/rhs)),
+            (Object::Int(lhs), Object::Int(rhs)) => Ok(Object::Int(lhs / rhs)),
             _ => Err("Division requires that both operands are integers".into()),
-        } 
+        }
     }
 }
 
@@ -61,7 +66,10 @@ impl Object {
             (Object::Null, Object::Null) => Ok(Object::Bool(true)),
             (Object::Int(one), Object::Int(two)) => Ok(Object::Bool(one == two)),
             (Object::Bool(one), Object::Bool(two)) => Ok(Object::Bool(one == two)),
-            _ => Err(format!("==/!= operator is not valid for types: {:?}, {:?}", self, rhs))
+            _ => Err(format!(
+                "==/!= operator is not valid for types: {:?}, {:?}",
+                self, rhs
+            )),
         }
     }
 
@@ -70,21 +78,27 @@ impl Object {
         match eq {
             Object::Bool(false) => Ok(Object::Bool(true)),
             Object::Bool(true) => Ok(Object::Bool(false)),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
-    
+
     pub(crate) fn gt(self, rhs: Self) -> Result<Object, String> {
         match (&self, &rhs) {
             (Object::Int(one), Object::Int(two)) => Ok(Object::Bool(one > two)),
-            _ => Err(format!(">/< operator is not valid for types: {:?}, {:?}", self, rhs))
+            _ => Err(format!(
+                ">/< operator is not valid for types: {:?}, {:?}",
+                self, rhs
+            )),
         }
     }
 
     pub(crate) fn lt(self, rhs: Self) -> Result<Object, String> {
         match (&self, &rhs) {
             (Object::Int(one), Object::Int(two)) => Ok(Object::Bool(one < two)),
-            _ => Err(format!(">/< operator is not valid for types: {:?}, {:?}", self, rhs))
+            _ => Err(format!(
+                ">/< operator is not valid for types: {:?}, {:?}",
+                self, rhs
+            )),
         }
     }
 }
@@ -97,9 +111,6 @@ impl From<bool> for Object {
 
 impl Into<bool> for Object {
     fn into(self) -> bool {
-        match self {
-            Object::Null | Object::Bool(false) => false,
-            _                                  => true,
-        }
+        !matches!(self, Object::Null | Object::Bool(false))
     }
 }
