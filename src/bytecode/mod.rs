@@ -15,10 +15,13 @@ const OP_GT: u8 = 12;
 const OP_LT: u8 = 13;
 const OP_J: u8 = 14;
 const OP_JNT: u8 = 15;
-const OP_SET_GLOBAL: u8 = 16;
-const OP_GET_GLOBAL: u8 = 17;
+const OP_RET: u8 = 16;
+const OP_RET_VAL: u8 = 17;
+const OP_CALL: u8 = 18;
+const OP_SET_GLOBAL: u8 = 19;
+const OP_GET_GLOBAL: u8 = 20;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Instruction {
     Constant(u16),
     Pop,
@@ -35,6 +38,9 @@ pub enum Instruction {
     LT,
     Jump(usize),
     JumpNotTruthy(usize),
+    Return,
+    ReturnValue,
+    Call,
     SetGlobal(u16),
     GetGlobal(u16),
 }
@@ -69,6 +75,9 @@ impl Instruction {
                 v.extend(loc.to_be_bytes());
                 v
             }
+            Self::Return => vec![OP_RET],
+            Self::ReturnValue => vec![OP_RET_VAL],
+            Self::Call => vec![OP_CALL],
             Self::SetGlobal(index) => {
                 let mut v = vec![OP_SET_GLOBAL];
                 v.extend(index.to_be_bytes());

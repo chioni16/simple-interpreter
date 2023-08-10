@@ -140,6 +140,8 @@ fn main() {
         } else {
             4;
         }
+        let y = fn() { return 5 + 10; }
+        let z = y();
         "#
         .into(),
     );
@@ -148,7 +150,7 @@ fn main() {
     println!("{:#?}", ast);
     // let object = eval_program(ast);
     // println!("{:#?}", object);
-    let mut e = Emitter::default();
+    let mut e = Emitter::new();
     e.compile_program(ast);
     let b = e.emit();
     println!("{:#?}", b);

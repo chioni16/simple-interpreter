@@ -17,6 +17,7 @@ pub enum Object {
         ast::expression::Block,
         Rc<RefCell<Env<Object>>>,
     ),
+    CompiledFunction(Vec<u8>),
     Null,
 }
 
